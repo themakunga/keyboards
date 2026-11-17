@@ -1,0 +1,24 @@
+version: "0.2"
+language: en,es
+import:
+  - "@cspell/dict-es-es/cspell-ext.json"
+dictionaries:
+  - en_US
+  - softwareTerms
+  - cpp
+  - bash
+  - filetypes
+words:
+  - qmk
+  - keymap
+  - keymaps
+  - themakunga
+  - yamllint
+  - commitlint
+ignorePaths:
+  - .git
+  - .build
+  - .cache
+  - qmk_firmware
+  - node_modules
+  - .venv

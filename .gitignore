@@ -1,0 +1,36 @@
+# QMK build output and local firmware checkout
+/.build/
+/qmk_firmware/
+*.hex
+*.bin
+*.uf2
+*.elf
+*.eep
+*.map
+*.o
+*.a
+*.d
+
+# Tool caches and generated editor data
+.cache/
+.clangd/
+compile_commands.json
+__pycache__/
+*.py[cod]
+.venv/
+node_modules/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+.secrets/
+
+# Editor and operating system files
+*.bak
+*.swp
+*.swo
+*~
+.DS_Store
+._*
+*.log

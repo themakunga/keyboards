@@ -1,0 +1,6 @@
+.git/
+.build/
+.cache/
+qmk_firmware/
+node_modules/
+.venv/

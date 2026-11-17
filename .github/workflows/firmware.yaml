@@ -1,0 +1,38 @@
+name: Build QMK firmware
+
+"on":
+  push:
+    branches: [main]
+    paths:
+      - qmk.json
+      - keyboards/**
+      - layouts/**
+      - users/**
+      - .github/workflows/firmware.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  targets:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.targets.outputs.enabled }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - id: targets
+        run: echo "enabled=$(jq '.build_targets | length > 0' qmk.json)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: targets
+    if: needs.targets.outputs.enabled == 'true'
+    permissions:
+      contents: write
+    uses: >-
+      qmk/.github/.github/workflows/qmk_userspace_build.yml@01daf5113fa50804558f21cc074ab99ba84ddeaf
+    with:
+      qmk_repo: qmk/qmk_firmware
+      qmk_ref: master
