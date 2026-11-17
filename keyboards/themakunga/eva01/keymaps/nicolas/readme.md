@@ -1,30 +1,29 @@
 # eva01 — Sofle RGB
 
-QMK keymap `nicolas`, migrated from
+Mapa QMK `nicolas`, migrado desde
 [`themakunga/public-dotfiles`](https://github.com/themakunga/public-dotfiles/tree/d04247cea7cb029a036994025541a2ba4762d9c0/qmk/sofle/nicolas).
-The keyboard is named `eva01` and its QMK target is `themakunga/eva01`. The keymap remains
-`nicolas`. The hardware configuration preserves the original Sofle settings; custom key bindings are
-documented below.
+El teclado se llama `eva01`, su destino QMK es `themakunga/eva01` y el mapa conserva el nombre
+`nicolas`. Se mantiene la configuración de origen, con los cambios de teclas documentados abajo.
 
-## Hardware assumptions
+## Hardware previsto
 
-- Hardware base: `sofle/rev1`, used by standard Sofle v1, v2 and RGB PCBs.
-- Controller: Pro Micro ATmega32U4, 5 V / 16 MHz, Caterina bootloader.
-- USB on the left half (`MASTER_LEFT`).
-- Standard matrix: 58 keys and two encoder switches.
-- RGB Matrix: 72 LEDs, 36 per half, pin D3.
-- OLED: SSD1306, 128 by 32 pixels, landscape orientation.
+- Base: `sofle/rev1`, utilizada por las placas estándar Sofle v1, v2 y RGB.
+- Controlador: Pro Micro ATmega32U4, 5 V / 16 MHz, gestor de arranque Caterina.
+- USB en la mitad izquierda (`MASTER_LEFT`).
+- Matriz estándar: 58 teclas y dos pulsadores de codificador.
+- Matriz RGB: 72 LED, 36 por mitad, pin D3.
+- OLED: SSD1306, 128 × 32 píxeles, orientación horizontal.
 
-These assumptions come from the original configuration. Check the actual PCB markings and controller
-before flashing. This target does not describe Sofle Keyhive, Sofle Choc or an RP2040 controller.
-Compare vendor-specific pin assignments with QMK's board definition when applicable.
+Estos datos proceden de la configuración original. Comprueba las marcas de la placa y el controlador
+antes de grabar el firmware. Este destino no describe Sofle Keyhive, Sofle Choc ni un controlador
+RP2040. Compara los pines específicos del fabricante con la definición de QMK cuando corresponda.
 
-The firmware workflow pins QMK 0.34.5 at `b1aea2556040c28d58d611c8aef0082b5780bb6d`. See the
-[upstream hardware notes](https://github.com/qmk/qmk_firmware/blob/b1aea2556040c28d58d611c8aef0082b5780bb6d/keyboards/sofle/readme.md).
+El flujo de compilación fija QMK 0.34.5 en `b1aea2556040c28d58d611c8aef0082b5780bb6d`. Consulta las
+[notas originales del hardware](https://github.com/qmk/qmk_firmware/blob/b1aea2556040c28d58d611c8aef0082b5780bb6d/keyboards/sofle/readme.md).
 
-## Build
+## Compilación
 
-From this repository's root, with an existing QMK environment:
+Desde la raíz de este repositorio, con un entorno QMK existente:
 
 ```sh
 export QMK_HOME="$HOME/qmk_firmware"
@@ -36,61 +35,78 @@ qmk config user.overlay_dir="$(pwd)"
 qmk compile -kb themakunga/eva01 -km nicolas
 ```
 
-Set `QMK_HOME` to the existing firmware checkout. The link is a one-time setup; an existing
-namespace is preserved. `keyboard.json` combines the original Sofle shared metadata and rev1
-definition from the pinned QMK commit, changing only the keyboard name and maintainer. Board
-callbacks still come from `keyboards/sofle/sofle.c` through the board's `rules.mk`.
+Ajusta `QMK_HOME` a tu copia local de QMK Firmware. El enlace se configura una vez y conserva
+cualquier directorio o enlace existente. `keyboard.json` combina los metadatos compartidos de Sofle
+y la definición rev1 de la revisión QMK fijada; solo cambia el nombre del teclado y su responsable.
+Las funciones de la placa siguen procediendo de `keyboards/sofle/sofle.c` mediante `rules.mk`.
 
-The target is registered in `qmk.json`, so `qmk userspace-compile` builds it as well. The same
-firmware is used on both halves. VIA is disabled; generated firmware files remain ignored by Git.
+El destino está registrado en `qmk.json`, por lo que también se compila con `qmk userspace-compile`.
+Ambas mitades utilizan el mismo firmware. VIA está desactivado y Git ignora los archivos de firmware
+generados.
 
-## Layers and controls
+## Capas y controles
 
-Use the US keyboard layout in the operating system. The base is QWERTY with Ctrl in the Caps Lock
-position. `MO(1)` and `MO(2)` are momentary symbol and media/RGB layers. The right thumb uses tap
-dance: one tap sends Space, two taps send Enter, and Shift plus that key sends Enter.
+![Distribución de eva01 con sus tres capas y pulsadores de codificador](../../../../../docs/eva01-layout.svg)
 
-The left bottom row starts with Ctrl+S, Alt/Option, Layer 2 (`MO(1)`, symbols), Mac/Command and
-Space. Mac/Command and Layer 2 have exchanged their original positions. The bottom-left key sends
-Ctrl+S instead of acting as a Control modifier; the Control key in the Caps Lock position remains
-available.
+La imagen sigue las posiciones de `keyboard.json` y las acciones de `keymap.c`. Las teclas atenuadas
+heredan la acción base. Cada capa se muestra activada por separado; si mantienes L2 y L3 a la vez,
+QMK resuelve primero L3, después L2 y finalmente la base. Los círculos representan los pulsadores de
+los codificadores.
 
-| Layer            | Left encoder counterclockwise / clockwise | Left switch    | Right encoder counterclockwise / clockwise | Right switch   |
-| ---------------- | ----------------------------------------- | -------------- | ------------------------------------------ | -------------- |
-| Base, QMK 0      | Shift+Up / Shift+Down                     | Mouse button 1 | Shift+Left / Shift+Right                   | Mouse button 2 |
-| Symbols, QMK 1   | Alt+Up / Alt+Down                         | Mute           | Alt+Left / Alt+Right                       | Home           |
-| Media/RGB, QMK 2 | Volume down / up                          | Mute           | Screen brightness down / up                | GUI+Ctrl+Q     |
+Utiliza la distribución **US** en el sistema operativo. La base es QWERTY con Ctrl en la posición de
+bloqueo de mayúsculas. La esquina inferior izquierda envía **Ctrl+S**; Ctrl sigue disponible en la
+fila de A. En los pulgares izquierdos, **L2** está entre Alt y **Mac**; Mac envía Command
+(`KC_LGUI`).
 
-On the upper layers, the custom record handler remaps the Down key to Up. The source retains its
-existing modifiers, function keys, media and RGB controls. `MOUSEKEY_MOVE_DELTA` is 16; brightness
-is limited to 100/255, with an initial value of 64/255 and violet hue 191/255. Existing EEPROM
-settings can override the defaults.
+Mantén **L2** (`MO(1)`, capa QMK 1) para símbolos y **L3** (`MO(2)`, capa QMK 2) para funciones,
+multimedia y RGB. Al soltar la tecla vuelves a la capa anterior. El pulgar derecho usa una secuencia
+de toques: uno envía Espacio, dos envían Enter y Shift más esa tecla envía Enter. En L2 esa tecla
+envía Enter directamente; en L3, la tecla de Espacio del pulgar izquierdo envía Enter.
 
-## OLED and animation
+| Capa                  | Giro izquierdo antihorario / horario | Pulsador izquierdo | Giro derecho antihorario / horario | Pulsador derecho |
+| --------------------- | ------------------------------------ | ------------------ | ---------------------------------- | ---------------- |
+| Base, QMK 0           | Shift+Arriba / Shift+Abajo           | Botón de ratón 1   | Shift+Izquierda / Shift+Derecha    | Botón de ratón 2 |
+| Símbolos, QMK 1       | Alt+Arriba / Alt+Abajo               | Silenciar          | Alt+Izquierda / Alt+Derecha        | Inicio           |
+| Multimedia/RGB, QMK 2 | Bajar / subir volumen                | Silenciar          | Bajar / subir brillo de pantalla   | GUI+Ctrl+Q       |
 
-The left OLED shows the keyboard name and layer reminders. The right OLED shows the active layer,
-modifier indicators, the last three key presses and Bongo Cat. State synchronizes through QMK RPC;
-the animation reacts to key presses and returns to rest after 220 ms.
+En las capas superiores, la función personalizada convierte `KC_DOWN` en `KC_UP`, incluidas las
+teclas heredadas. Por eso la imagen muestra Arriba en esas posiciones, incluso en la zona de
+navegación de L3. La base mantiene Abajo. La combinación GUI+Ctrl+Q bloquea la sesión en macOS.
 
-The original Bongo Cat source credits
-[dancarroll/qmk-bongo](https://github.com/dancarroll/qmk-bongo), James Incandenza, pixelbenny and
-obosob. Copyright notices and both original license files are retained. The complete GPL text is in
-[LICENSE](LICENSE); the inherited `bongo/LICENSE` file is empty. `rules.mk` compiles
-`bongo/bongo_cat.c`; the additional root-level copy is preserved from the source repository.
+El mapa conserva sus modificadores, teclas de función y controles multimedia y RGB.
+`MOUSEKEY_MOVE_DELTA` es 16; el brillo RGB se limita a 100/255, con valor inicial 64/255 y tono
+violeta 191/255. La configuración guardada en EEPROM puede reemplazar los valores iniciales.
 
-The OLED uses the included reduced QMK ASCII font, with printable characters 32 through 126.
-Hardware orientation must be checked on the actual assembly.
+## OLED y animación
 
-## Host checks
+El OLED izquierdo muestra el nombre del teclado y recordatorios de las capas. El derecho muestra la
+capa activa, indicadores de modificadores, las últimas tres pulsaciones y Bongo Cat. El estado se
+sincroniza mediante RPC de QMK; la animación reacciona a las pulsaciones y vuelve al reposo después
+de 220 ms.
+
+El código original de Bongo Cat atribuye la autoría a
+[dancarroll/qmk-bongo](https://github.com/dancarroll/qmk-bongo), James Incandenza, pixelbenny y
+obosob. Se conservan los avisos de derechos de autor y ambos archivos de licencia originales. El
+texto completo de la GPL está en [LICENSE](LICENSE); el archivo heredado `bongo/LICENSE` está vacío.
+`rules.mk` compila `bongo/bongo_cat.c`; la copia adicional en la raíz se conserva del repositorio de
+origen.
+
+El OLED utiliza la fuente ASCII reducida de QMK incluida, con caracteres visibles del 32 al 126. La
+orientación física debe comprobarse en el montaje real.
+
+## Comprobaciones locales
+
+Ejecuta desde la raíz del repositorio:
 
 ```sh
 python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
 ```
 
-Run from the repository root. Python 3 and a C compiler are required. The check verifies key and
-encoder assignments and compiles the real OLED module against local stubs. It covers labels,
-history, modifiers, layer state, RPC retries, display bounds and preservation of the animation's
-central pixels.
+Se necesitan Python 3 y un compilador de C. La comprobación verifica las asignaciones de teclas y
+codificadores, y compila el módulo OLED real con sustitutos locales. Cubre etiquetas, historial,
+modificadores, estado de capas, nuevos intentos RPC, límites de pantalla y conservación de los
+píxeles centrales de la animación.
 
-These checks do not validate hardware pins, physical encoder direction, OLED orientation, actual
-brightness or the final firmware size. The keyboard has not been flashed as part of this migration.
+Estas comprobaciones no validan los pines físicos, el sentido real de los codificadores, la
+orientación del OLED, el brillo real ni el tamaño final del firmware. No se ha grabado el teclado
+como parte de esta migración.
