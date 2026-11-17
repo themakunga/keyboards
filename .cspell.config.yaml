@@ -15,6 +15,28 @@ words:
   - themakunga
   - yamllint
   - commitlint
+  - sofle
+  - nicolas
+  - caterina
+  - keyhive
+  - dancarroll
+  - Incandenza
+  - pixelbenny
+  - obosob
+  - rgblight
+  - nkro
+  - bksp
+  - Wextra
+  - Werror
+  - EEPROM
+  - Adafruit
+  - DQMK
+  - promicro
+  - Josef
+  - Adamcik
+  - ws2812
+ignoreRegExpList:
+  - '\b(?:KC|MS|RM|MOD|TD|RGB|QMK|DQMK)_[A-Z0-9_]+\b'
 ignorePaths:
   - .git
   - .build
@@ -22,3 +44,4 @@ ignorePaths:
   - qmk_firmware
   - node_modules
   - .venv
+  - "**/LICENSE"

@@ -27,6 +27,12 @@ repos:
       - id: markdownlint-cli2
   - repo: local
     hooks:
+      - id: sofle-checks
+        name: EVA01 keyboard, keymap and OLED checks
+        entry: python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
+        language: system
+        files: ^keyboards/themakunga/eva01/
+        pass_filenames: false
       - id: cspell
         name: English and Spanish spelling
         entry: cspell lint --config .cspell.config.yaml --no-progress
