@@ -3,7 +3,8 @@
 QMK keymap `nicolas`, migrated from
 [`themakunga/public-dotfiles`](https://github.com/themakunga/public-dotfiles/tree/d04247cea7cb029a036994025541a2ba4762d9c0/qmk/sofle/nicolas).
 The keyboard is named `eva01` and its QMK target is `themakunga/eva01`. The keymap remains
-`nicolas`. The source settings are preserved; the host check now follows the actual keymap.
+`nicolas`. The hardware configuration preserves the original Sofle settings; custom key bindings are
+documented below.
 
 ## Hardware assumptions
 
@@ -48,6 +49,11 @@ firmware is used on both halves. VIA is disabled; generated firmware files remai
 Use the US keyboard layout in the operating system. The base is QWERTY with Ctrl in the Caps Lock
 position. `MO(1)` and `MO(2)` are momentary symbol and media/RGB layers. The right thumb uses tap
 dance: one tap sends Space, two taps send Enter, and Shift plus that key sends Enter.
+
+The left bottom row starts with Ctrl+S, Alt/Option, Layer 2 (`MO(1)`, symbols), Mac/Command and
+Space. Mac/Command and Layer 2 have exchanged their original positions. The bottom-left key sends
+Ctrl+S instead of acting as a Control modifier; the Control key in the Caps Lock position remains
+available.
 
 | Layer            | Left encoder counterclockwise / clockwise | Left switch    | Right encoder counterclockwise / clockwise | Right switch   |
 | ---------------- | ----------------------------------------- | -------------- | ------------------------------------------ | -------------- |
