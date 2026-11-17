@@ -1,0 +1,91 @@
+name: Promote release
+
+"on":
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    if: >-
+      github.ref == 'refs/heads/main' && github.actor == 'themakunga' && github.triggering_actor ==
+      'themakunga'
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: version
+        run: |
+          tag=$(python3 scripts/release_version.py)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+      - name: Check release version logic
+        run: python3 -m unittest discover -s tests -p test_release_version.py
+
+  build:
+    needs: version
+    permissions:
+      contents: write
+    uses: ./.github/workflows/firmware.yaml
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: Firmware
+          path: firmware
+      - name: Publish firmware release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          git merge-base --is-ancestor HEAD origin/main
+          shopt -s nullglob
+          firmware=(firmware/*.hex firmware/*.bin firmware/*.uf2)
+          if (( ${#firmware[@]} == 0 )); then
+            echo "No firmware files were built." >&2
+            exit 1
+          fi
+          refspecs=()
+          for ref in "refs/heads/release/$TAG" "refs/tags/$TAG"; do
+            existing=$(git ls-remote origin "$ref" | cut -f1)
+            if [[ -z "$existing" ]]; then
+              refspecs+=("$GITHUB_SHA:$ref")
+            elif [[ "$(git rev-parse "$existing^{commit}")" != "$GITHUB_SHA" ]]; then
+              echo "Existing $ref points to another commit." >&2
+              exit 1
+            fi
+          done
+          gh auth setup-git
+          if (( ${#refspecs[@]} )); then
+            git push --atomic origin "${refspecs[@]}"
+          fi
+          if gh release view "$TAG" --json isDraft --jq .isDraft > release-draft.txt; then
+            if grep -qx false release-draft.txt; then
+              echo "Release $TAG is already published."
+              exit 0
+            fi
+          else
+            gh release create "$TAG" --verify-tag --draft --title "$TAG" --generate-notes
+          fi
+          gh release upload "$TAG" "${firmware[@]}" --clobber
+          gh release edit "$TAG" --draft=false --latest

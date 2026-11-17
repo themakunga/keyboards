@@ -72,3 +72,23 @@ them through QMK's reusable workflow and upload the firmware as a GitHub Actions
 
 Generated firmware, build output, caches and local credentials are ignored by Git. Keep the keyboard
 sources and configuration files tracked.
+
+## Promote a release
+
+After this workflow is merged, open **Actions → Promote release → Run workflow**, select `main`, and
+run it as `themakunga`. The workflow uses the exact main commit selected when the run starts.
+
+It calculates the next stable `vMAJOR.MINOR.PATCH` from commits since the highest stable version
+reachable from that commit. `BREAKING CHANGE:`, `BREAKING-CHANGE:` or `!` increments major; `feat`
+increments minor; `fix` increments patch. For manual promotions, other new commits also increment
+patch. Merge commits are included, so conventional commits inside merged branches count. With the
+current history and no previous tags, the first release is `v0.1.0`.
+
+The workflow compiles the registered QMK targets, downloads their firmware, then atomically creates
+`release/vMAJOR.MINOR.PATCH` and tag `vMAJOR.MINOR.PATCH` at that same commit. It creates a draft
+GitHub Release, uploads the `.hex`, `.bin` and `.uf2` files that were built, and publishes the
+release only after upload succeeds. Download firmware from the repository's **Releases** page.
+
+Concurrent promotions are serialized. Repeating a run for an already tagged commit reuses its
+version: an unfinished draft can be completed, while a published release is left unchanged. The
+workflow does not push to `main` or flash any hardware.
