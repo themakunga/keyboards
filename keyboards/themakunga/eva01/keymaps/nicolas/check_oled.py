@@ -1,11 +1,20 @@
 """Host checks for the actual OLED module; requires a C compiler."""
 import os
+import json
 import re
 import subprocess
 import tempfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parent
+board = json.loads((root.parents[1] / 'keyboard.json').read_text())
+assert board['keyboard_name'] == 'eva01' and board['maintainer'] == 'themakunga'
+assert board['development_board'] == 'promicro'
+assert board['matrix_pins'] == {'cols': ['F6', 'F7', 'B1', 'B3', 'B2', 'B6'],
+                               'rows': ['C6', 'D7', 'E6', 'B4', 'B5']}
+assert len(board['layouts']['LAYOUT']['layout']) == 60
+assert board['split']['serial']['pin'] == 'D2' and board['ws2812']['pin'] == 'D3'
+assert board['rgb_matrix']['split_count'] == [36, 36]
 source = (root / 'nicolas_oled.c').read_text()
 
 keymap = (root / 'keymap.c').read_text()

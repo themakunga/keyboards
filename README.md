@@ -5,9 +5,9 @@ Personal keyboard configurations and keymaps for [QMK Firmware](https://qmk.fm/)
 
 ## Registered keyboards
 
-| Keyboard         | QMK target   | Keymap    | Documentation                                                          |
-| ---------------- | ------------ | --------- | ---------------------------------------------------------------------- |
-| Sofle RGB EVA-01 | `sofle/rev1` | `nicolas` | [Hardware, layout and OLED](keyboards/sofle/keymaps/nicolas/readme.md) |
+| Keyboard          | QMK target         | Keymap    | Documentation                                                                     |
+| ----------------- | ------------------ | --------- | --------------------------------------------------------------------------------- |
+| eva01 (Sofle RGB) | `themakunga/eva01` | `nicolas` | [Hardware, layout and OLED](keyboards/themakunga/eva01/keymaps/nicolas/readme.md) |
 
 The Sofle sources were migrated from `themakunga/public-dotfiles` commit
 `d04247cea7cb029a036994025541a2ba4762d9c0`. The firmware workflow uses the same documented QMK
@@ -31,15 +31,25 @@ requests.
 The Sofle check requires Python 3 and a C compiler (`cc`):
 
 ```sh
-python3 keyboards/sofle/keymaps/nicolas/check_oled.py
+python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
 ```
 
-With an existing QMK environment, select this userspace and build the registered Sofle target:
+With an existing QMK environment, expose the custom keyboard definition once. Set `QMK_HOME` to your
+existing firmware checkout; the guards preserve any existing `themakunga` directory or symlink:
 
 ```sh
+export QMK_HOME="$HOME/qmk_firmware"
+test ! -e "$QMK_HOME/keyboards/themakunga" &&
+  test ! -L "$QMK_HOME/keyboards/themakunga" &&
+  ln -s "$(pwd)/keyboards/themakunga" "$QMK_HOME/keyboards/themakunga"
+qmk config user.qmk_home="$QMK_HOME"
 qmk config user.overlay_dir="$(pwd)"
-qmk userspace-compile
+qmk compile -kb themakunga/eva01 -km nicolas
 ```
+
+`qmk userspace-compile` builds the same registered target. This QMK revision discovers keyboard
+definitions inside the firmware checkout and external keymaps through userspace. CI creates the same
+link before compiling; no upstream firmware files are replaced.
 
 ## Add a keyboard
 

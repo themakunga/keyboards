@@ -28,10 +28,10 @@ repos:
   - repo: local
     hooks:
       - id: sofle-checks
-        name: Sofle keymap and OLED checks
-        entry: python3 keyboards/sofle/keymaps/nicolas/check_oled.py
+        name: EVA01 keyboard, keymap and OLED checks
+        entry: python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
         language: system
-        files: ^keyboards/sofle/keymaps/nicolas/
+        files: ^keyboards/themakunga/eva01/
         pass_filenames: false
       - id: cspell
         name: English and Spanish spelling

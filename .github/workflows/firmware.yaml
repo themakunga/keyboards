@@ -36,3 +36,8 @@ jobs:
     with:
       qmk_repo: qmk/qmk_firmware
       qmk_ref: b1aea2556040c28d58d611c8aef0082b5780bb6d
+      preparation_command: |
+        test ! -e "$GITHUB_WORKSPACE/qmk_firmware/keyboards/themakunga"
+        test ! -L "$GITHUB_WORKSPACE/qmk_firmware/keyboards/themakunga"
+        ln -s "$GITHUB_WORKSPACE/keyboards/themakunga" \
+          "$GITHUB_WORKSPACE/qmk_firmware/keyboards/themakunga"

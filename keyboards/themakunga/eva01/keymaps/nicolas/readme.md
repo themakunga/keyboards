@@ -1,12 +1,13 @@
-# Sofle RGB EVA-01
+# eva01 — Sofle RGB
 
 QMK keymap `nicolas`, migrated from
 [`themakunga/public-dotfiles`](https://github.com/themakunga/public-dotfiles/tree/d04247cea7cb029a036994025541a2ba4762d9c0/qmk/sofle/nicolas).
-The keyboard sources and settings are preserved; the host check now follows the actual keymap.
+The keyboard is named `eva01` and its QMK target is `themakunga/eva01`. The keymap remains
+`nicolas`. The source settings are preserved; the host check now follows the actual keymap.
 
 ## Hardware assumptions
 
-- QMK target: `sofle/rev1`, used by standard Sofle v1, v2 and RGB PCBs.
+- Hardware base: `sofle/rev1`, used by standard Sofle v1, v2 and RGB PCBs.
 - Controller: Pro Micro ATmega32U4, 5 V / 16 MHz, Caterina bootloader.
 - USB on the left half (`MASTER_LEFT`).
 - Standard matrix: 58 keys and two encoder switches.
@@ -25,9 +26,19 @@ The firmware workflow pins QMK 0.34.5 at `b1aea2556040c28d58d611c8aef0082b5780bb
 From this repository's root, with an existing QMK environment:
 
 ```sh
+export QMK_HOME="$HOME/qmk_firmware"
+test ! -e "$QMK_HOME/keyboards/themakunga" &&
+  test ! -L "$QMK_HOME/keyboards/themakunga" &&
+  ln -s "$(pwd)/keyboards/themakunga" "$QMK_HOME/keyboards/themakunga"
+qmk config user.qmk_home="$QMK_HOME"
 qmk config user.overlay_dir="$(pwd)"
-qmk compile -kb sofle/rev1 -km nicolas
+qmk compile -kb themakunga/eva01 -km nicolas
 ```
+
+Set `QMK_HOME` to the existing firmware checkout. The link is a one-time setup; an existing
+namespace is preserved. `keyboard.json` combines the original Sofle shared metadata and rev1
+definition from the pinned QMK commit, changing only the keyboard name and maintainer. Board
+callbacks still come from `keyboards/sofle/sofle.c` through the board's `rules.mk`.
 
 The target is registered in `qmk.json`, so `qmk userspace-compile` builds it as well. The same
 firmware is used on both halves. VIA is disabled; generated firmware files remain ignored by Git.
@@ -67,7 +78,7 @@ Hardware orientation must be checked on the actual assembly.
 ## Host checks
 
 ```sh
-python3 keyboards/sofle/keymaps/nicolas/check_oled.py
+python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
 ```
 
 Run from the repository root. Python 3 and a C compiler are required. The check verifies key and

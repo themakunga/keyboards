@@ -22,6 +22,6 @@
 // This keymap uses dedicated modifiers and momentary layers, not tap-hold.
 #define NO_ACTION_TAPPING
 #define NO_ACTION_ONESHOT
-#define OLED_FONT_H "keyboards/sofle/keymaps/nicolas/font_ascii.c"
+#define OLED_FONT_H "font_ascii.c"
 #define OLED_FONT_START 32
 #define OLED_FONT_END 126
