@@ -129,8 +129,8 @@ Calcula la próxima versión estable `vMAJOR.MINOR.PATCH` a partir de los commit
 versión estable más alta accesible desde esa revisión. `BREAKING CHANGE:`, `BREAKING-CHANGE:` o `!`
 incrementan la versión mayor; `feat` incrementa la menor; `fix` incrementa el parche. En las
 promociones manuales, otros commits nuevos también incrementan el parche. Se incluyen los commits de
-integración, por lo que cuentan los Conventional Commits de las ramas integradas. Sin etiquetas
-previas, el historial actual produce `v0.1.0` como primera versión.
+integración, por lo que cuentan los Conventional Commits de las ramas integradas. En un repositorio
+sin etiquetas, un primer `feat` produce `v0.1.0`.
 
 El flujo compila los destinos QMK registrados, descarga el firmware y crea de forma atómica la rama
 `release/vMAJOR.MINOR.PATCH` y la etiqueta `vMAJOR.MINOR.PATCH` en esa misma revisión. Crea una
