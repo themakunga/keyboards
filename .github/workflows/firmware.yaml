@@ -10,6 +10,7 @@ name: Build QMK firmware
       - users/**
       - .github/workflows/firmware.yaml
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
