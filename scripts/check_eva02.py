@@ -1,6 +1,7 @@
 """Check EVA02 hardware assumptions, usable layers and the documented layout."""
 import json
 import re
+import subprocess
 from pathlib import Path
 from xml.etree import ElementTree as ET
 
@@ -38,6 +39,11 @@ assert 'ko_make_basic(MOD_MASK_SHIFT, TD(TD_SPC_ENT), KC_ENT)' in source
 oled_lines = re.findall(r'oled_write_ln_P\(PSTR\("((?:BASE|L2|L3):[^"]*)"\)', source)
 assert len(oled_lines) == 3 and all(len(line) == 21 for line in oled_lines)
 assert ['themakunga/eva02', 'nicolas'] in json.loads((root / 'qmk.json').read_text())['build_targets']
+config = board_path / 'keymaps/nicolas/config.h'
+macros = subprocess.run(['cc', '-E', '-dM', '-Werror', '-D', 'RGB_MATRIX_MAXIMUM_BRIGHTNESS=120',
+                         '-x', 'c', '-'], input=f'#include "{config}"\n', text=True,
+                        check=True, capture_output=True).stdout
+assert '#define RGB_MATRIX_MAXIMUM_BRIGHTNESS 100\n' in macros
 
 ns = {'svg': 'http://www.w3.org/2000/svg'}
 svg = ET.parse(root / 'docs/eva02-layout.svg')
