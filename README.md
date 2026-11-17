@@ -8,6 +8,7 @@ un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
 | Teclado           | Destino QMK        | Mapa      | Documentación                                                                         |
 | ----------------- | ------------------ | --------- | ------------------------------------------------------------------------------------- |
 | eva01 (Sofle RGB) | `themakunga/eva01` | `nicolas` | [Hardware, distribución y OLED](keyboards/themakunga/eva01/keymaps/nicolas/readme.md) |
+| eva02 (Corne v2)  | `themakunga/eva02` | `nicolas` | [Hardware, distribución y OLED](keyboards/themakunga/eva02/keymaps/nicolas/readme.md) |
 
 ## Distribución de eva01
 
@@ -35,6 +36,21 @@ Las fuentes de Sofle se migraron desde `themakunga/public-dotfiles`, revisión
 documentada de QMK: `b1aea2556040c28d58d611c8aef0082b5780bb6d` (0.34.5). Verifica la placa y el
 controlador físicos antes de grabar el firmware.
 
+## Distribución de eva02
+
+![Distribución de eva02: base QWERTY, L2 de números y símbolos y L3 de funciones y multimedia](docs/eva02-layout.svg)
+
+Corne v2 de 42 teclas, con un perfil para Pro Micro ATmega32U4. Conserva las columnas de letras de
+eva01, Ctrl en la fila de A y Ctrl+S. Los pulgares izquierdos son **Ctrl+S · L2 · Mac**; los
+derechos, **Espacio / Enter · L3 · Alt**. Mac envía Command.
+
+Mantén **L2** para números y símbolos, o **L3** para F1–F12, navegación, multimedia y RGB. Espacio /
+Enter conserva el toque sencillo, doble y con Shift en todas las capas. Las cuatro flechas están en
+H/J/K/L de L3; Abajo se conserva en este teclado. La
+[guía de eva02](keyboards/themakunga/eva02/keymaps/nicolas/readme.md) detalla las diferencias y los
+requisitos del controlador. Comprueba el hardware real antes de utilizar el firmware; el perfil
+estándar no es para RP2040.
+
 ## Comprobaciones del repositorio
 
 Con `pre-commit` disponible, activa los controles de Git:
@@ -44,18 +60,20 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-Los controles verifican el mapa de Sofle y su módulo OLED, YAML, JSON, formato, Markdown, ortografía
-en inglés y español, claves privadas y archivos grandes. El control de mensajes exige Conventional
-Commits, por ejemplo `feat: add keyboard keymap`. GitHub Actions ejecuta las mismas comprobaciones
-de archivos al publicar cambios y en las solicitudes de integración.
+Los controles verifican los mapas de ambos teclados, la imagen de eva02, el módulo OLED de Sofle,
+YAML, JSON, formato, Markdown, ortografía en inglés y español, claves privadas y archivos grandes.
+El control de mensajes exige Conventional Commits, por ejemplo `feat: add keyboard keymap`. GitHub
+Actions ejecuta las mismas comprobaciones de archivos al publicar cambios y en las solicitudes de
+integración.
 
 La comprobación de Sofle necesita Python 3 y un compilador de C (`cc`):
 
 ```sh
 python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
+python3 scripts/check_eva02.py
 ```
 
-## Compilar eva01
+## Compilar los teclados
 
 Con un entorno QMK existente, expón la definición del teclado una sola vez. Ejecuta desde la raíz de
 este repositorio y ajusta `QMK_HOME` a tu copia local de QMK Firmware. Las condiciones conservan
@@ -69,9 +87,10 @@ test ! -e "$QMK_HOME/keyboards/themakunga" &&
 qmk config user.qmk_home="$QMK_HOME"
 qmk config user.overlay_dir="$(pwd)"
 qmk compile -kb themakunga/eva01 -km nicolas
+qmk compile -kb themakunga/eva02 -km nicolas
 ```
 
-`qmk userspace-compile` compila el mismo destino registrado. Esta revisión de QMK descubre las
+`qmk userspace-compile` compila ambos destinos registrados. Esta revisión de QMK descubre las
 definiciones de teclado dentro de su copia local y los mapas externos mediante el espacio de
 usuario. La integración continua crea el mismo enlace antes de compilar, sin reemplazar archivos
 originales de QMK.

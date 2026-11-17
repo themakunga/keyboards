@@ -36,6 +36,9 @@ words:
   - Adamcik
   - ws2812
   - labelledby
+  - crkbd
+  - foostan
+  - Corne
 ignoreRegExpList:
   - '\b(?:KC|MS|RM|MOD|TD|RGB|QMK|DQMK)_[A-Z0-9_]+\b'
 ignorePaths:

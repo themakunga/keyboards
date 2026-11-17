@@ -39,6 +39,13 @@ repos:
         language: system
         files: ^keyboards/themakunga/eva01/
         pass_filenames: false
+      - id: eva02-checks
+        name: EVA02 hardware, keymap and diagram checks
+        entry: python3 scripts/check_eva02.py
+        language: system
+        files: >-
+          ^(keyboards/themakunga/eva0[12]/|qmk.json$|scripts/check_eva02.py$|docs/eva02-layout.svg$)
+        pass_filenames: false
       - id: cspell
         name: English and Spanish spelling
         entry: cspell lint --config .cspell.config.yaml --no-progress
