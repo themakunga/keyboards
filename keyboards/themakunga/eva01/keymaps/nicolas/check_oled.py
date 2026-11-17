@@ -27,10 +27,11 @@ for index, body in blocks:
     assert tuple(keys[42:44]) == presses[int(index)]
     if index == '0':
         assert keys[24] == 'KC_LCTL' and keys[36] == 'KC_LSFT' and keys[49] == 'KC_RSFT'
-        assert keys[53] == 'MO(1)' and keys[56] == 'MO(2)'
+        assert keys[50:54] == ['C(KC_S)', 'KC_LALT', 'MO(1)', 'KC_LGUI']
+        assert keys[56] == 'MO(2)'
         assert keys[55] == 'TD(TD_SPC_ENT)'
     else:
-        assert keys[53] == keys[56] == 'KC_TRNS'
+        assert keys[52] == keys[53] == keys[56] == 'KC_TRNS'
 encoders = re.findall(r'ENCODER_CCW_CW\(((?:[^()]|\([^()]*\))*)\)', keymap)
 assert [re.sub(r'\s+', '', value) for value in encoders] == [
     'S(KC_UP),S(KC_DOWN)', 'S(KC_LEFT),S(KC_RGHT)',
