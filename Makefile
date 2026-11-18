@@ -1,6 +1,10 @@
 .DEFAULT_GOAL := help
 
+QMK_HOME ?= $(HOME)/qmk_firmware
+
 KEYBOARDS := eva01 eva02
+BOARD_eva01 := sofle/v2
+BOARD_eva02 := corne/v2
 ACTION := $(filter build flash slash,$(MAKECMDGOALS))
 KEYBOARD := $(word 2,$(MAKECMDGOALS))
 
@@ -20,21 +24,38 @@ $(KEYBOARDS):
 
 endif
 
-.PHONY: help build flash slash
+ifneq ($(filter setup update,$(MAKECMDGOALS)),)
+ifneq ($(words $(MAKECMDGOALS)),1)
+$(error Usage: make setup or make update)
+endif
+endif
+
+.PHONY: help setup update build flash slash
 help:
-	@printf '%s\n' 'Usage: make <command> <keyboard>' '' \
+	@printf '%s\n' 'Usage: make <command> [keyboard]' '' \
 	  'Commands:' \
+	  '  setup          Link keyboards and configure QMK userspace' \
+	  '  update         Refresh local keyboard links in QMK' \
 	  '  build eva01    Compile eva01 firmware' \
 	  '  flash eva01    Compile and flash eva01 firmware' \
 	  '  slash eva01    Alias for flash' \
 	  '  help           Show this help (default)' '' \
 	  'Keyboards: $(KEYBOARDS)' \
-	  'Requires an existing QMK environment and the setup documented in README.md.'
+	  'Requires an existing QMK environment and the setup documented in README.md.' \
+	  'Override the checkout with QMK_HOME=/path/to/qmk_firmware.'
+
+setup: update
+	qmk config user.qmk_home="$(QMK_HOME)"
+	qmk config user.overlay_dir="$(CURDIR)"
+	qmk userspace-doctor
+
+update:
+	QMK_HOME="$(QMK_HOME)" sh scripts/link-keyboards.sh
 
 build:
-	qmk compile -kb themakunga/$(KEYBOARD) -km nicolas
+	qmk compile -kb $(BOARD_$(KEYBOARD)) -km themakunga_$(KEYBOARD)
 
 flash:
-	qmk flash -kb themakunga/$(KEYBOARD) -km nicolas
+	qmk flash -kb $(BOARD_$(KEYBOARD)) -km themakunga_$(KEYBOARD)
 
 slash: flash

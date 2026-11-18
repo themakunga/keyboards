@@ -27,6 +27,12 @@ repos:
       - id: markdownlint-cli2
   - repo: local
     hooks:
+      - id: keyboard-setup-tests
+        name: Keyboard hierarchy and QMK setup tests
+        entry: python3 -m unittest discover -s tests -p test_keyboard_setup.py
+        language: system
+        files: ^(keyboards/|qmk.json$|scripts/link-keyboards.sh$|tests/test_keyboard_setup.py$)
+        pass_filenames: false
       - id: makefile-tests
         name: Makefile build and flash command tests
         entry: python3 -m unittest discover -s tests -p test_makefile.py
@@ -41,16 +47,16 @@ repos:
         pass_filenames: false
       - id: sofle-checks
         name: EVA01 keyboard, keymap and OLED checks
-        entry: python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
+        entry: python3 keyboards/sofle/v2/keymaps/themakunga_eva01/check_oled.py
         language: system
-        files: ^keyboards/themakunga/eva01/
+        files: ^keyboards/sofle/v2/
         pass_filenames: false
       - id: eva02-checks
         name: EVA02 hardware, keymap and diagram checks
         entry: python3 scripts/check_eva02.py
         language: system
         files: >-
-          ^(keyboards/themakunga/eva0[12]/|qmk.json$|scripts/check_eva02.py$|docs/eva02-layout.svg$)
+          ^(keyboards/(sofle|corne)/|qmk.json$|scripts/check_eva02.py$|docs/eva02-layout.svg$)
         pass_filenames: false
       - id: cspell
         name: English and Spanish spelling

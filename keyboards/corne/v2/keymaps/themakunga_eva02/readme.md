@@ -1,7 +1,7 @@
 # eva02 — Corne v2
 
-Mapa `nicolas` para `themakunga/eva02`, basado en la distribución de eva01 y adaptado a las 42
-teclas del Corne v2. Mantiene QWERTY, Ctrl en la fila de A, Ctrl+S, Mac y tres capas.
+The `themakunga_eva02` QMK keymap targets `corne/v2`, adapting EVA01 to the 42-key Corne v2. It
+provides QWERTY, dedicated modifiers, three layers and the Space/Enter tap dance.
 
 ## Hardware previsto
 
@@ -59,21 +59,15 @@ la animación Bongo Cat y los controles de codificador pertenecen a eva01.
 Desde la raíz del repositorio, con un entorno QMK existente:
 
 ```sh
-export QMK_HOME="$HOME/qmk_firmware"
-test ! -e "$QMK_HOME/keyboards/themakunga" &&
-  test ! -L "$QMK_HOME/keyboards/themakunga" &&
-  ln -s "$(pwd)/keyboards/themakunga" "$QMK_HOME/keyboards/themakunga"
-qmk config user.qmk_home="$QMK_HOME"
-qmk config user.overlay_dir="$(pwd)"
-qmk compile -kb themakunga/eva02 -km nicolas
+make setup
+qmk compile -kb corne/v2 -km themakunga_eva02
 ```
 
-Ajusta `QMK_HOME` a tu copia local de QMK Firmware. Si ya creaste el enlace para eva01, sirve
-también para eva02. El enlace conserva cualquier directorio o enlace existente.
+Run `make setup QMK_HOME="/path/to/qmk_firmware"` for a custom checkout, or `make update` to refresh
+both revision links. See the root README for setup and update behavior.
 
-`qmk userspace-compile` compila ambos teclados registrados. **Build QMK firmware** y **Promote
-release** incluyen automáticamente eva02 mediante `qmk.json`. Ambas mitades utilizan el mismo
-firmware. VIA está desactivado.
+The **Build QMK firmware** and **Promote release** workflows compile the targets in `qmk.json`. Both
+halves use the same firmware. VIA is disabled.
 
 ## Comprobaciones
 

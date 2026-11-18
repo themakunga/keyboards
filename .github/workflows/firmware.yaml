@@ -4,7 +4,9 @@ name: Build QMK firmware
   push:
     branches: [main]
     paths:
+      - Makefile
       - qmk.json
+      - scripts/link-keyboards.sh
       - keyboards/**
       - layouts/**
       - users/**
@@ -16,20 +18,7 @@ permissions:
   contents: read
 
 jobs:
-  targets:
-    runs-on: ubuntu-latest
-    outputs:
-      enabled: ${{ steps.targets.outputs.enabled }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - id: targets
-        run: echo "enabled=$(jq '.build_targets | length > 0' qmk.json)" >> "$GITHUB_OUTPUT"
-
   build:
-    needs: targets
-    if: needs.targets.outputs.enabled == 'true'
     permissions:
       contents: write
     uses: >-
@@ -38,7 +27,4 @@ jobs:
       qmk_repo: qmk/qmk_firmware
       qmk_ref: b1aea2556040c28d58d611c8aef0082b5780bb6d
       preparation_command: |
-        test ! -e "$GITHUB_WORKSPACE/qmk_firmware/keyboards/themakunga"
-        test ! -L "$GITHUB_WORKSPACE/qmk_firmware/keyboards/themakunga"
-        ln -s "$GITHUB_WORKSPACE/keyboards/themakunga" \
-          "$GITHUB_WORKSPACE/qmk_firmware/keyboards/themakunga"
+        make update QMK_HOME="$GITHUB_WORKSPACE/qmk_firmware"

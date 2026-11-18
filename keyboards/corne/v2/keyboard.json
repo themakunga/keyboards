@@ -764,7 +764,7 @@
     "led_count": 54,
     "split_count": [27, 27]
   },
-  "keyboard_name": "eva02",
+  "keyboard_name": "Corne v2",
   "build": {
     "lto": true
   },

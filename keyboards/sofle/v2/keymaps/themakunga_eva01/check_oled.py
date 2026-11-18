@@ -8,14 +8,14 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parent
 board = json.loads((root.parents[1] / 'keyboard.json').read_text())
-assert board['keyboard_name'] == 'eva01' and board['maintainer'] == 'themakunga'
+assert board['keyboard_name'] == 'Sofle v2 RGB' and board['maintainer'] == 'themakunga'
 assert board['development_board'] == 'promicro'
 assert board['matrix_pins'] == {'cols': ['F6', 'F7', 'B1', 'B3', 'B2', 'B6'],
                                'rows': ['C6', 'D7', 'E6', 'B4', 'B5']}
 assert len(board['layouts']['LAYOUT']['layout']) == 60
 assert board['split']['serial']['pin'] == 'D2' and board['ws2812']['pin'] == 'D3'
 assert board['rgb_matrix']['split_count'] == [36, 36]
-source = (root / 'nicolas_oled.c').read_text()
+source = (root / 'eva_oled.c').read_text()
 
 keymap = (root / 'keymap.c').read_text()
 blocks = re.findall(r'\[([012])\] = LAYOUT\((.*?)\n    \)', keymap, re.S)
@@ -90,7 +90,7 @@ static bool transaction_rpc_send(int id, uint8_t size, const void *data) {
 test = r'''
 #include <assert.h>
 #include <stdio.h>
-#include "nicolas_oled.c"
+#include "eva_oled.c"
 #include "bongo/bongo_cat.c"
 static unsigned pixels;
 static uint8_t cursor_row, cursor_col;
@@ -125,35 +125,35 @@ int main(void) {
     label(KC_0, name); assert(!strcmp(name, "0"));
     label(KC_F12, name); assert(!strcmp(name, "F12"));
     label(0xFFFF, name); assert(!strcmp(name, "#FFFF"));
-    nicolas_oled_init(); assert(receiver);
+    eva_oled_init(); assert(receiver);
     keyrecord_t event = {.event.pressed = true};
-    now = 100; nicolas_oled_record(KC_A, &event);
-    nicolas_oled_record(KC_AT, &event);
-    nicolas_oled_record(KC_HOME, &event);
+    now = 100; eva_oled_record(KC_A, &event);
+    eva_oled_record(KC_AT, &event);
+    eva_oled_record(KC_HOME, &event);
     assert(!strcmp(state.keys[0], "Home") && !strcmp(state.keys[2], "A"));
-    event.event.pressed = false; nicolas_oled_record(KC_Z, &event);
+    event.event.pressed = false; eva_oled_record(KC_Z, &event);
     assert(!strcmp(state.keys[0], "Home"));
     layer_state = 4; mods = MOD_MASK_CTRL; weak_mods = MOD_MASK_GUI;
-    nicolas_oled_housekeeping(); assert(state.layer == 2 && state.frame != 0);
+    eva_oled_housekeeping(); assert(state.layer == 2 && state.frame != 0);
     assert(sends == 1);
-    nicolas_oled_housekeeping(); assert(sends == 1);
-    now += 50; nicolas_oled_housekeeping(); assert(sends == 2);
-    now += 220; nicolas_oled_housekeeping(); assert(state.frame == 0);
-    nicolas_oled_render(); assert(pixels && inverse[1][0] && inverse[1][4] && !inverse[2][0]);
+    eva_oled_housekeeping(); assert(sends == 1);
+    now += 50; eva_oled_housekeeping(); assert(sends == 2);
+    now += 220; eva_oled_housekeeping(); assert(state.frame == 0);
+    eva_oled_render(); assert(pixels && inverse[1][0] && inverse[1][4] && !inverse[2][0]);
     assert(!strncmp(lines[0], "   FN   ", 8));
-    unsigned previous = pixels; left = true; nicolas_oled_render(); assert(pixels == previous);
+    unsigned previous = pixels; left = true; eva_oled_render(); assert(pixels == previous);
     left = false; master = false; event.event.pressed = true;
-    nicolas_oled_record(KC_Z, &event); assert(!strcmp(state.keys[0], "Home"));
+    eva_oled_record(KC_Z, &event); assert(!strcmp(state.keys[0], "Home"));
     display_state_t packet = {.layer = 1, .frame = 2, .keys = {"B"}};
     receiver(1, &packet, 0, NULL); assert(state.layer == 2);
     receiver(sizeof(packet), &packet, 0, NULL); assert(state.layer == 1);
-    nicolas_oled_render(); assert(!strcmp(lines[0]+16, "B"));
+    eva_oled_render(); assert(!strcmp(lines[0]+16, "B"));
     assert(sizeof(waiting_frame) == 512);
     assert(memcmp(animation_frames[0], animation_frames[1], 512));
     const char *frames[] = {waiting_frame, animation_frames[0], animation_frames[1], ready_frame};
     for (uint8_t frame = 0; frame < 4; ++frame) {
         state.frame = frame;
-        nicolas_oled_render();
+        eva_oled_render();
         // All original central sprite pixels survive the status overlays.
         for (unsigned y = 0; y < 32; ++y)
             for (unsigned x = 48; x < 96; ++x)

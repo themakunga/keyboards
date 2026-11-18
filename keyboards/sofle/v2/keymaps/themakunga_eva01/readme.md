@@ -1,7 +1,7 @@
 # eva01 — Sofle RGB
 
-The `nicolas` QMK keymap for `eva01` uses the `themakunga/eva01` target. The hardware, key
-assignments and OLED behavior are documented below.
+The `themakunga_eva01` QMK keymap targets `sofle/v2`. Hardware, key assignments and OLED behavior
+are documented below.
 
 ## Hardware previsto
 
@@ -24,22 +24,15 @@ El flujo de compilación fija QMK 0.34.5 en `b1aea2556040c28d58d611c8aef0082b578
 Desde la raíz de este repositorio, con un entorno QMK existente:
 
 ```sh
-export QMK_HOME="$HOME/qmk_firmware"
-test ! -e "$QMK_HOME/keyboards/themakunga" &&
-  test ! -L "$QMK_HOME/keyboards/themakunga" &&
-  ln -s "$(pwd)/keyboards/themakunga" "$QMK_HOME/keyboards/themakunga"
-qmk config user.qmk_home="$QMK_HOME"
-qmk config user.overlay_dir="$(pwd)"
-qmk compile -kb themakunga/eva01 -km nicolas
+make setup
+qmk compile -kb sofle/v2 -km themakunga_eva01
 ```
 
-Ajusta `QMK_HOME` a tu copia local de QMK Firmware. El enlace se configura una vez y conserva
-cualquier directorio o enlace existente. `keyboard.json` combina los metadatos compartidos de Sofle
-y la definición rev1 de la revisión QMK fijada; solo cambia el nombre del teclado y su responsable.
-Las funciones de la placa siguen procediendo de `keyboards/sofle/sofle.c` mediante `rules.mk`.
+Run `make setup QMK_HOME="/path/to/qmk_firmware"` for a custom checkout, or `make update` to refresh
+both revision links. See the root README for setup and update behavior.
 
-El destino está registrado en `qmk.json`, por lo que también se compila con `qmk userspace-compile`.
-Ambas mitades utilizan el mismo firmware. VIA está desactivado y Git ignora los archivos de firmware
+This keymap is registered in `qmk.json` for standard QMK userspace builds and releases. Ambas
+mitades utilizan el mismo firmware. VIA está desactivado y Git ignora los archivos de firmware
 generados.
 
 ## Capas y controles
@@ -97,7 +90,7 @@ orientación física debe comprobarse en el montaje real.
 Ejecuta desde la raíz del repositorio:
 
 ```sh
-python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
+python3 keyboards/sofle/v2/keymaps/themakunga_eva01/check_oled.py
 ```
 
 Se necesitan Python 3 y un compilador de C. La comprobación verifica las asignaciones de teclas y

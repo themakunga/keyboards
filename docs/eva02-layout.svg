@@ -4,8 +4,8 @@
 <rect width="1120" height="1378" rx="20" fill="#1A1B26"/>
 <g font-family="DejaVu Sans, Arial, sans-serif">
 <text x="32" y="45" font-size="32" fill="#BB9AF7" text-anchor="start" font-weight="bold">eva02</text>
-<text x="156" y="44" font-size="20" fill="#C0CAF5" text-anchor="start" font-weight="normal">/ themakunga/eva02</text>
-<text x="32" y="75" font-size="15" fill="#C0CAF5" text-anchor="start" font-weight="normal">Corne v2 · Mapa nicolas · Distribución US · Vista superior</text>
+<text x="156" y="44" font-size="20" fill="#C0CAF5" text-anchor="start" font-weight="normal">/ themakunga_eva02</text>
+<text x="32" y="75" font-size="15" fill="#C0CAF5" text-anchor="start" font-weight="normal">Corne v2 · Keymap themakunga_eva02 · Distribución US · Vista superior</text>
 <path d="M32 108 H1088" stroke="#414868"/>
 <text x="32" y="137" font-size="22" fill="#BB9AF7" text-anchor="start" font-weight="bold">Base · QMK 0</text>
 <g><title>QMK 0, posición 0: KC_ESC; acción KC_ESC</title>

@@ -16,7 +16,6 @@ words:
   - yamllint
   - commitlint
   - sofle
-  - nicolas
   - caterina
   - keyhive
   - dancarroll
@@ -38,7 +37,7 @@ words:
   - labelledby
   - crkbd
   - foostan
-  - Corne
+  - corne
 ignoreRegExpList:
   - '\b(?:KC|MS|RM|MOD|TD|RGB|QMK|DQMK)_[A-Z0-9_]+\b'
 ignorePaths:

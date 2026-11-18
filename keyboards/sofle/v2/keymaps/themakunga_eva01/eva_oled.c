@@ -1,4 +1,4 @@
-#include "nicolas_oled.h"
+#include "eva_oled.h"
 #include "transactions.h"
 #include "bongo/bongo_cat.h"
 #include <string.h>
@@ -125,11 +125,11 @@ static void receive_state(uint8_t size, const void *data, uint8_t out_size, void
     for (uint8_t i = 0; i < 3; ++i) state.keys[i][5] = '\0';
 }
 
-void nicolas_oled_init(void) {
+void eva_oled_init(void) {
     transaction_register_rpc(EVA_OLED_SYNC, receive_state);
 }
 
-void nicolas_oled_record(uint16_t keycode, keyrecord_t *record) {
+void eva_oled_record(uint16_t keycode, keyrecord_t *record) {
     if (!is_keyboard_master() || !record->event.pressed) return;
     memmove(state.keys[1], state.keys[0], 2 * sizeof(state.keys[0]));
     label(keycode, state.keys[0]);
@@ -138,7 +138,7 @@ void nicolas_oled_record(uint16_t keycode, keyrecord_t *record) {
     stroke ^= 1;
 }
 
-void nicolas_oled_housekeeping(void) {
+void eva_oled_housekeeping(void) {
     if (!is_keyboard_master()) return;
     state.layer = get_highest_layer(layer_state | default_layer_state);
     state.mods = get_mods() | get_weak_mods();
@@ -159,7 +159,7 @@ static void text_at(uint8_t col, uint8_t row, const char *text, bool inverted) {
     oled_write(text, inverted);
 }
 
-bool nicolas_oled_render(void) {
+bool eva_oled_render(void) {
     if (is_keyboard_left()) return false;
     render_bongo_cat(state.frame);
     // Clear left zone (x=0..46) and right zone (x=96..127); x=47 reserved for separator.

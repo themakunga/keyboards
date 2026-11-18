@@ -5,10 +5,23 @@ un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
 
 ## Teclados registrados
 
-| Teclado           | Destino QMK        | Mapa      | Documentación                                                                         |
-| ----------------- | ------------------ | --------- | ------------------------------------------------------------------------------------- |
-| eva01 (Sofle RGB) | `themakunga/eva01` | `nicolas` | [Hardware, distribución y OLED](keyboards/themakunga/eva01/keymaps/nicolas/readme.md) |
-| eva02 (Corne v2)  | `themakunga/eva02` | `nicolas` | [Hardware, distribución y OLED](keyboards/themakunga/eva02/keymaps/nicolas/readme.md) |
+| Keyboard  | Version | QMK target | Keymap             | Documentation                                                                      |
+| --------- | ------- | ---------- | ------------------ | ---------------------------------------------------------------------------------- |
+| Sofle RGB | v2      | `sofle/v2` | `themakunga_eva01` | [Hardware, layout and OLED](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md) |
+| Corne     | v2      | `corne/v2` | `themakunga_eva02` | [Hardware, layout and OLED](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) |
+
+Hardware definitions are grouped by keyboard family and version; personal keymaps live beneath
+`keymaps/`:
+
+```text
+keyboards/
+├── sofle/v2/
+│   ├── keyboard.json
+│   └── keymaps/themakunga_eva01/
+└── corne/v2/
+    ├── keyboard.json
+    └── keymaps/themakunga_eva02/
+```
 
 ## Distribución de eva01
 
@@ -17,7 +30,7 @@ un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
 La imagen muestra cada capa por separado, con la posición física de las 58 teclas y los dos
 pulsadores de los codificadores. Las teclas atenuadas heredan la acción de la capa base. Los
 círculos representan los pulsadores; los giros están detallados en la
-[guía de eva01](keyboards/themakunga/eva01/keymaps/nicolas/readme.md#capas-y-controles).
+[guía de eva01](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md#capas-y-controles).
 
 - **Base (QMK 0):** QWERTY, Ctrl en la posición de bloqueo de mayúsculas y **Ctrl+S** en la esquina
   inferior izquierda. **Mac** envía Command y está entre **L2** y Espacio.
@@ -45,7 +58,7 @@ derechos, **Espacio / Enter · L3 · Alt**. Mac envía Command.
 Mantén **L2** para números y símbolos, o **L3** para F1–F12, navegación, multimedia y RGB. Espacio /
 Enter conserva el toque sencillo, doble y con Shift en todas las capas. Las cuatro flechas están en
 H/J/K/L de L3; Abajo se conserva en este teclado. La
-[guía de eva02](keyboards/themakunga/eva02/keymaps/nicolas/readme.md) detalla las diferencias y los
+[guía de eva02](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) detalla las diferencias y los
 requisitos del controlador. Comprueba el hardware real antes de utilizar el firmware; el perfil
 estándar no es para RP2040.
 
@@ -67,40 +80,58 @@ integración.
 La comprobación de Sofle necesita Python 3 y un compilador de C (`cc`):
 
 ```sh
-python3 keyboards/themakunga/eva01/keymaps/nicolas/check_oled.py
+python3 keyboards/sofle/v2/keymaps/themakunga_eva01/check_oled.py
 python3 scripts/check_eva02.py
 ```
 
 ## Compilar los teclados
 
-Con un entorno QMK existente, expón la definición del teclado una sola vez. Ejecuta desde la raíz de
-este repositorio y ajusta `QMK_HOME` a tu copia local de QMK Firmware. Las condiciones conservan
-cualquier directorio o enlace `themakunga` existente:
+Use an existing QMK Firmware checkout at revision `b1aea2556040c28d58d611c8aef0082b5780bb6d`. From
+this repository root:
 
 ```sh
-export QMK_HOME="$HOME/qmk_firmware"
-test ! -e "$QMK_HOME/keyboards/themakunga" &&
-  test ! -L "$QMK_HOME/keyboards/themakunga" &&
-  ln -s "$(pwd)/keyboards/themakunga" "$QMK_HOME/keyboards/themakunga"
-qmk config user.qmk_home="$QMK_HOME"
-qmk config user.overlay_dir="$(pwd)"
-qmk compile -kb themakunga/eva01 -km nicolas
-qmk compile -kb themakunga/eva02 -km nicolas
+make setup
+# For a checkout in a different directory:
+make setup QMK_HOME="/path/to/qmk_firmware"
 ```
 
-`qmk userspace-compile` compila ambos destinos registrados. Esta revisión de QMK descubre las
-definiciones de teclado dentro de su copia local y los mapas externos mediante el espacio de
-usuario. La integración continua crea el mismo enlace antes de compilar, sin reemplazar archivos
-originales de QMK.
+`QMK_HOME` defaults to `$HOME/qmk_firmware`. `make setup` links both keyboard revisions, saves QMK's
+firmware and userspace paths, then runs `qmk userspace-doctor`. It requires an existing checkout and
+QMK tools; it does not clone QMK, install dependencies or flash hardware.
+
+```sh
+make update
+# With the same custom checkout used during setup:
+make update QMK_HOME="/path/to/qmk_firmware"
+```
+
+`make update` refreshes the links to the local keyboard definitions, preserving QMK's existing
+families and Sofle callbacks. Repeated runs are safe; conflicting files or links are rejected.
+Source changes are visible immediately through the links. This command does not fetch newer QMK
+revisions or update firmware on a connected keyboard.
+
+The flat keymap names work with standard QMK commands and userspace builds:
+
+```sh
+qmk compile -kb sofle/v2 -km themakunga_eva01
+qmk compile -kb corne/v2 -km themakunga_eva02
+qmk userspace-compile
+```
+
+`qmk.json` registers both targets. CI uses the same link-update target and the standard QMK
+userspace workflow, producing the `Firmware` artifact consumed by releases.
 
 ## Build and flash with Make
 
-Run these commands from the repository root after completing the QMK setup above. Both keyboards use
-the `nicolas` keymap. GNU Make and an existing QMK development environment are required; the
-Makefile does not install tools or change QMK configuration.
+Run these commands from the repository root after completing the QMK setup above. The shortcuts
+select the keyboard and its keymap from the table above. GNU Make and an existing QMK development
+environment are required; `setup` configures QMK; `update` refreshes links. Neither command installs
+tools.
 
 ```sh
 make help
+make setup
+make update
 make build eva01
 make flash eva01
 make build eva02
@@ -124,30 +155,16 @@ The command tests simulate QMK and never access hardware:
 python3 -m unittest discover -s tests -p test_makefile.py
 ```
 
-## Agregar un teclado
+## Add a keyboard
 
-Con un entorno de desarrollo QMK existente, ejecuta estos comandos desde este repositorio. Reemplaza
-`<keyboard>` por el identificador exacto de QMK, incluida su revisión cuando corresponda.
+Place its hardware definition in `keyboards/<family>/<version>/` and its keymap in
+`keymaps/themakunga_<name>/` beneath that directory. Retain upstream copyright notices and licenses.
+Add the hardware revision to `scripts/link-keyboards.sh`, then add the shortcut name to `KEYBOARDS`
+and its `BOARD_<name>` mapping in the Makefile. The shortcut selects `themakunga_<name>` as the
+keymap. Register the hardware/keymap pair in `qmk.json`, and update the command tests and
+documentation. The firmware workflow discovers registered targets automatically.
 
-```sh
-qmk config user.overlay_dir="$(pwd)"
-qmk new-keymap -kb <keyboard> -km themakunga
-qmk userspace-add -kb <keyboard> -km themakunga
-qmk userspace-compile
-```
-
-Guarda los mapas en `keyboards/<keyboard>/keymaps/themakunga/`. El código compartido del espacio de
-usuario va en `users/themakunga/`; los mapas de distribuciones comunitarias pueden usar
-`layouts/<layout>/themakunga/`.
-
-`qmk.json` registra los destinos de compilación. El flujo de firmware omite la compilación si esa
-lista está vacía. Con destinos registrados, los cambios en las rutas del firmware de `main`, o una
-ejecución manual, los compilan mediante el flujo compartido de QMK y publican el firmware como
-archivo para descargar de GitHub Actions.
-
-Git ignora el firmware generado, los resultados de compilación, los archivos temporales y las
-credenciales locales. Mantén las fuentes del teclado y sus archivos de configuración bajo control de
-versiones.
+Generated firmware, temporary build output and local credentials are ignored by Git.
 
 ## Promover una versión
 
@@ -161,7 +178,7 @@ promociones manuales, otros commits nuevos también incrementan el parche. Se in
 integración, por lo que cuentan los Conventional Commits de las ramas integradas. En un repositorio
 sin etiquetas, un primer `feat` produce `v0.1.0`.
 
-El flujo compila los destinos QMK registrados, descarga el firmware y crea de forma atómica la rama
+El flujo compila ambos keymaps, descarga el firmware y crea de forma atómica la rama
 `release/vMAJOR.MINOR.PATCH` y la etiqueta `vMAJOR.MINOR.PATCH` en esa misma revisión. Crea una
 versión en borrador en GitHub Releases, adjunta los archivos `.hex`, `.bin` y `.uf2` generados y
 publica la versión únicamente cuando termina la carga. Descarga el firmware desde la sección

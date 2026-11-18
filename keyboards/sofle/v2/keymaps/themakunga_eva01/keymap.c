@@ -1,5 +1,5 @@
 #include QMK_KEYBOARD_H
-#include "nicolas_oled.h"
+#include "eva_oled.h"
 
 enum tap_dance_actions { TD_SPC_ENT };
 tap_dance_action_t tap_dance_actions[] = {
@@ -43,10 +43,10 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
     [2] = {ENCODER_CCW_CW(KC_VOLD,    KC_VOLU),    ENCODER_CCW_CW(KC_BRMD,    KC_BRMU)},
 };
 
-void keyboard_post_init_user(void) { nicolas_oled_init(); }
+void keyboard_post_init_user(void) { eva_oled_init(); }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    nicolas_oled_record(keycode, record);
+    eva_oled_record(keycode, record);
     // En L1 y L2, ↓ → ↑ (no interfiere con nvim en base)
     if (keycode == KC_DOWN && (IS_LAYER_ON(1) || IS_LAYER_ON(2))) {
         if (record->event.pressed) register_code(KC_UP);
@@ -56,7 +56,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     return true;
 }
 
-void housekeeping_task_user(void) { nicolas_oled_housekeeping(); }
+void housekeeping_task_user(void) { eva_oled_housekeeping(); }
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     (void)rotation;
     return OLED_ROTATION_0;
@@ -69,5 +69,5 @@ bool oled_task_user(void) {
         oled_write_ln_P(PSTR("L3: media + RGB"), false);
         return false;
     }
-    return nicolas_oled_render();
+    return eva_oled_render();
 }

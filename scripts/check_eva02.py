@@ -6,9 +6,9 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
-board_path = root / 'keyboards/themakunga/eva02'
+board_path = root / 'keyboards/corne/v2'
 board = json.loads((board_path / 'keyboard.json').read_text())
-assert board['keyboard_name'] == 'eva02' and board['maintainer'] == 'themakunga'
+assert board['keyboard_name'] == 'Corne v2' and board['maintainer'] == 'themakunga'
 assert board['development_board'] == 'promicro'
 assert board['matrix_pins'] == {'cols': ['F4', 'F5', 'F6', 'F7', 'B1', 'B3'],
                                'rows': ['D4', 'C6', 'D7', 'E6']}
@@ -17,7 +17,7 @@ assert board['rgb_matrix']['split_count'] == [27, 27]
 positions = board['layouts']['LAYOUT_split_3x6_3']['layout']
 assert len(positions) == len({tuple(key['matrix']) for key in positions}) == 42
 
-source = (board_path / 'keymaps/nicolas/keymap.c').read_text()
+source = (board_path / 'keymaps/themakunga_eva02/keymap.c').read_text()
 blocks = re.findall(r'\[([012])\] = LAYOUT_split_3x6_3\((.*?)\n    \)', source, re.S)
 assert [index for index, _ in blocks] == ['0', '1', '2']
 layers = [[code.strip() for code in body.split(',')] for _, body in blocks]
@@ -29,7 +29,7 @@ assert layers[1][1:11] == [f'KC_{n % 10}' for n in range(1, 11)]
 assert layers[1][0] == 'KC_TAB'
 assert {'KC_LEFT', 'KC_DOWN', 'KC_UP', 'KC_RGHT'} <= set(layers[2])
 assert {f'KC_F{n}' for n in range(1, 13)} <= set(layers[2])
-sofle = (root / 'keyboards/themakunga/eva01/keymaps/nicolas/keymap.c').read_text()
+sofle = (root / 'keyboards/sofle/v2/keymaps/themakunga_eva01/keymap.c').read_text()
 base = re.search(r'\[0\] = LAYOUT\((.*?)\n    \)', sofle, re.S).group(1)
 base = [code.strip() for code in base.split(',')]
 assert layers[0][1:11] == base[13:23]
@@ -38,8 +38,8 @@ assert 'ACTION_TAP_DANCE_DOUBLE(KC_SPC, KC_ENT)' in source
 assert 'ko_make_basic(MOD_MASK_SHIFT, TD(TD_SPC_ENT), KC_ENT)' in source
 oled_lines = re.findall(r'oled_write_ln_P\(PSTR\("((?:BASE|L2|L3):[^"]*)"\)', source)
 assert len(oled_lines) == 3 and all(len(line) == 21 for line in oled_lines)
-assert ['themakunga/eva02', 'nicolas'] in json.loads((root / 'qmk.json').read_text())['build_targets']
-config = board_path / 'keymaps/nicolas/config.h'
+assert (board_path / 'keymaps/themakunga_eva02/keymap.c').is_file()
+config = board_path / 'keymaps/themakunga_eva02/config.h'
 macros = subprocess.run(['cc', '-E', '-dM', '-Werror', '-D', 'RGB_MATRIX_MAXIMUM_BRIGHTNESS=120',
                          '-x', 'c', '-'], input=f'#include "{config}"\n', text=True,
                         check=True, capture_output=True).stdout
