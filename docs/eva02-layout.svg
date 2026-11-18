@@ -152,22 +152,22 @@
 <rect x="976" y="313.2" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="1005" y="347.45" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Shift</text>
 </g>
-<g><title>QMK 0, posición 36: C(KC_S); acción C(KC_S)</title>
+<g><title>QMK 0, posición 36: KC_LGUI; acción KC_LGUI</title>
 <rect x="336" y="402.8" width="58" height="58" rx="7" fill="#292F46" stroke="#BB9AF7" stroke-width="1.5"/>
-<text x="365" y="437.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Ctrl+S</text>
+<text x="365" y="437.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Cmd</text>
 </g>
 <g><title>QMK 0, posición 37: MO(1); acción MO(1)</title>
 <rect x="400" y="402.8" width="58" height="58" rx="7" fill="#292F46" stroke="#BB9AF7" stroke-width="1.5"/>
 <text x="429" y="437.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">L2</text>
 </g>
-<g><title>QMK 0, posición 38: KC_LGUI; acción KC_LGUI</title>
+<g><title>QMK 0, posición 38: TD(TD_SPC_ENT); acción TD(TD_SPC_ENT)</title>
 <rect x="464" y="370.8" width="58" height="90" rx="7" fill="#292F46" stroke="#BB9AF7" stroke-width="1.5"/>
-<text x="493" y="421.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Mac</text>
+<text x="493" y="411.5" font-size="12" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Space</text>
+<text x="493" y="428.5" font-size="12" fill="#E1E7FF" text-anchor="middle" font-weight="normal">/ Enter</text>
 </g>
-<g><title>QMK 0, posición 39: TD(TD_SPC_ENT); acción TD(TD_SPC_ENT)</title>
+<g><title>QMK 0, posición 39: KC_SPC; acción KC_SPC</title>
 <rect x="592" y="370.8" width="58" height="90" rx="7" fill="#292F46" stroke="#BB9AF7" stroke-width="1.5"/>
-<text x="621" y="411.5" font-size="12" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Espacio</text>
-<text x="621" y="428.5" font-size="12" fill="#E1E7FF" text-anchor="middle" font-weight="normal">/ Enter</text>
+<text x="621" y="421.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Space</text>
 </g>
 <g><title>QMK 0, posición 40: MO(2); acción MO(2)</title>
 <rect x="656" y="402.8" width="58" height="58" rx="7" fill="#292F46" stroke="#BB9AF7" stroke-width="1.5"/>
@@ -325,22 +325,21 @@
 <rect x="976" y="723.2" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="1005" y="757.45" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Shift</text>
 </g>
-<g><title>QMK 1, posición 36: KC_TRNS; acción C(KC_S)</title>
+<g><title>QMK 1, posición 36: KC_TRNS; acción KC_LGUI</title>
 <rect x="336" y="812.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="365" y="847.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Ctrl+S</text>
+<text x="365" y="847.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Cmd</text>
 </g>
 <g><title>QMK 1, posición 37: KC_TRNS; acción MO(1)</title>
 <rect x="400" y="812.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="429" y="847.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">L2</text>
 </g>
-<g><title>QMK 1, posición 38: KC_TRNS; acción KC_LGUI</title>
-<rect x="464" y="780.8" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="493" y="831.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Mac</text>
+<g><title>QMK 1, posición 38: KC_ENT; acción KC_ENT</title>
+<rect x="464" y="780.8" width="58" height="90" rx="7" fill="#292F46" stroke="#7DCFFF" stroke-width="1.5"/>
+<text x="493" y="831.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
-<g><title>QMK 1, posición 39: KC_TRNS; acción TD(TD_SPC_ENT)</title>
+<g><title>QMK 1, posición 39: KC_TRNS; acción KC_SPC</title>
 <rect x="592" y="780.8" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="621" y="821.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">Espacio</text>
-<text x="621" y="838.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">/ Enter</text>
+<text x="621" y="831.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Space</text>
 </g>
 <g><title>QMK 1, posición 40: KC_TRNS; acción MO(2)</title>
 <rect x="656" y="812.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
@@ -507,22 +506,22 @@
 <rect x="976" y="1133.2" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="1005" y="1167.45" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Shift</text>
 </g>
-<g><title>QMK 2, posición 36: KC_TRNS; acción C(KC_S)</title>
+<g><title>QMK 2, posición 36: KC_TRNS; acción KC_LGUI</title>
 <rect x="336" y="1222.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="365" y="1257.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Ctrl+S</text>
+<text x="365" y="1257.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Cmd</text>
 </g>
 <g><title>QMK 2, posición 37: KC_TRNS; acción MO(1)</title>
 <rect x="400" y="1222.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="429" y="1257.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">L2</text>
 </g>
-<g><title>QMK 2, posición 38: KC_TRNS; acción KC_LGUI</title>
+<g><title>QMK 2, posición 38: KC_TRNS; acción TD(TD_SPC_ENT)</title>
 <rect x="464" y="1190.8" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="493" y="1241.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Mac</text>
+<text x="493" y="1231.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">Space</text>
+<text x="493" y="1248.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">/ Enter</text>
 </g>
-<g><title>QMK 2, posición 39: KC_TRNS; acción TD(TD_SPC_ENT)</title>
-<rect x="592" y="1190.8" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="621" y="1231.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">Espacio</text>
-<text x="621" y="1248.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">/ Enter</text>
+<g><title>QMK 2, posición 39: KC_ENT; acción KC_ENT</title>
+<rect x="592" y="1190.8" width="58" height="90" rx="7" fill="#292F46" stroke="#9ECE6A" stroke-width="1.5"/>
+<text x="621" y="1241.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
 <g><title>QMK 2, posición 40: KC_TRNS; acción MO(2)</title>
 <rect x="656" y="1222.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
@@ -535,6 +534,6 @@
 <text x="560" y="1098" font-size="20" fill="#9ECE6A" text-anchor="middle" font-weight="bold">EVA02</text>
 <path d="M32 1310 H1088" stroke="#414868"/>
 <text x="32" y="1336" font-size="14" fill="#C0CAF5" text-anchor="start" font-weight="normal">Teclas atenuadas: acción heredada de la base. Cada capa se muestra activada por separado.</text>
-<text x="32" y="1360" font-size="14" fill="#C0CAF5" text-anchor="start" font-weight="normal">Espacio / Enter en las tres capas: 1 toque / 2 toques; con Shift, Enter.</text>
+<text x="32" y="1360" font-size="14" fill="#C0CAF5" text-anchor="start" font-weight="normal">Left: Space / double-tap Enter; L2: Enter. Right: Space; L3: Enter.</text>
 </g>
 </svg>

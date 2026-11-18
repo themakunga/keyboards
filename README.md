@@ -51,16 +51,16 @@ physical board and controller before flashing firmware.
 
 ![Distribución de eva02: base QWERTY, L2 de números y símbolos y L3 de funciones y multimedia](docs/eva02-layout.svg)
 
-Corne v2 de 42 teclas, con un perfil para Pro Micro ATmega32U4. Conserva las columnas de letras de
-eva01, Ctrl en la fila de A y Ctrl+S. Los pulgares izquierdos son **Ctrl+S · L2 · Mac**; los
-derechos, **Espacio / Enter · L3 · Alt**. Mac envía Command.
+The 42-key Corne v2 targets Pro Micro ATmega32U4 and keeps EVA01's letter columns, Ctrl on the A row
+and three layers. From left to right, its thumb keys are **Command · L2 · Space/Enter** on the left
+and **Space · L3 · Alt** on the right.
 
-Mantén **L2** para números y símbolos, o **L3** para F1–F12, navegación, multimedia y RGB. Espacio /
-Enter conserva el toque sencillo, doble y con Shift en todas las capas. Las cuatro flechas están en
-H/J/K/L de L3; Abajo se conserva en este teclado. La
-[guía de eva02](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) detalla las diferencias y los
-requisitos del controlador. Comprueba el hardware real antes de utilizar el firmware; el perfil
-estándar no es para RP2040.
+The inner left thumb sends Space on one tap and Enter on a double tap; Shift also produces Enter. On
+L2 (QMK 1), that key sends Enter directly. The inner right thumb sends only Space on the base and
+L2, and Enter directly on L3 (QMK 2). Hold **L2** for numbers and symbols or **L3** for F1–F12,
+navigation, multimedia and RGB. All four arrows remain on H/J/K/L of L3. See the
+[EVA02 guide](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) for hardware requirements; the
+standard controller profile is not for RP2040.
 
 ## Comprobaciones del repositorio
 

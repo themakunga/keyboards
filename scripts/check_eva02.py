@@ -23,8 +23,9 @@ assert [index for index, _ in blocks] == ['0', '1', '2']
 layers = [[code.strip() for code in body.split(',')] for _, body in blocks]
 assert all(len(layer) == 42 for layer in layers)
 assert layers[0][12] == 'KC_LCTL'
-assert layers[0][36:] == ['C(KC_S)', 'MO(1)', 'KC_LGUI', 'TD(TD_SPC_ENT)', 'MO(2)', 'KC_LALT']
-assert all(layer[36:] == ['KC_TRNS'] * 6 for layer in layers[1:])
+assert layers[0][36:] == ['KC_LGUI', 'MO(1)', 'TD(TD_SPC_ENT)', 'KC_SPC', 'MO(2)', 'KC_LALT']
+assert layers[1][36:] == ['KC_TRNS', 'KC_TRNS', 'KC_ENT', 'KC_TRNS', 'KC_TRNS', 'KC_TRNS']
+assert layers[2][36:] == ['KC_TRNS', 'KC_TRNS', 'KC_TRNS', 'KC_ENT', 'KC_TRNS', 'KC_TRNS']
 assert layers[1][1:11] == [f'KC_{n % 10}' for n in range(1, 11)]
 assert layers[1][0] == 'KC_TAB'
 assert {'KC_LEFT', 'KC_DOWN', 'KC_UP', 'KC_RGHT'} <= set(layers[2])
@@ -54,6 +55,10 @@ for layer, codes in enumerate(layers):
         group = groups[layer * 42 + index]
         code = layers[0][index] if original == 'KC_TRNS' else original
         assert group.find('svg:title', ns).text == f'QMK {layer}, posición {index}: {original}; acción {code}'
+        if index in (36, 38, 39):
+            labels = {'KC_LGUI': ['Cmd'], 'TD(TD_SPC_ENT)': ['Space', '/ Enter'],
+                      'KC_SPC': ['Space'], 'KC_ENT': ['Enter']}
+            assert [label.text for label in group.findall('svg:text', ns)] == labels[code]
         key = group.find('svg:rect', ns)
         assert abs(float(key.attrib['x']) - (80 + position['x'] * 64)) < 0.01
         assert abs(float(key.attrib['y']) - (166 + layer * 410 + position['y'] * 64)) < 0.01

@@ -1,7 +1,7 @@
 # eva02 — Corne v2
 
 The `themakunga_eva02` QMK keymap targets `corne/v2`, adapting EVA01 to the 42-key Corne v2. It
-provides QWERTY, dedicated modifiers, three layers and the Space/Enter tap dance.
+provides QWERTY, dedicated modifiers, three layers and a left-thumb Space/Enter tap dance.
 
 ## Hardware previsto
 
@@ -35,9 +35,11 @@ finalmente la base.
 
 - **Base (QMK 0):** letras y puntuación en las mismas columnas que eva01. Esc queda arriba a la
   izquierda; Ctrl, en la fila de A; Shift, en ambos extremos inferiores.
-- **Pulgares izquierdos:** Ctrl+S, L2 (`MO(1)`) y Mac/Command, en ese orden.
-- **Pulgares derechos:** Espacio / Enter, L3 (`MO(2)`) y Alt. Un toque envía Espacio, dos envían
-  Enter y Shift más esa tecla envía Enter. Esta acción se conserva en las tres capas.
+- **Left thumbs, left to right:** Command, L2 (`MO(1)`) and Space/Enter. The inner key sends Space
+  on one tap, Enter on a double tap, and Enter with Shift. On L2 (QMK 1), it sends Enter directly;
+  on L3 alone it retains the base tap dance.
+- **Right thumbs, left to right:** Space, L3 (`MO(2)`) and Alt. The inner key sends only Space on
+  the base and L2, with no tap dance. On L3 (QMK 2), it sends Enter directly.
 - **L2 · Números y símbolos (QMK 1):** mantener L2 coloca 1–0 sobre las letras superiores; con Shift
   produce sus símbolos US. Tab queda en la esquina superior izquierda y Suprimir a la derecha. Las
   filas restantes incluyen barras, comillas, llaves, corchetes y operadores.
