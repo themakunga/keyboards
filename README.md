@@ -31,10 +31,8 @@ círculos representan los pulsadores; los giros están detallados en la
 Configura la distribución **US** en el sistema operativo. En L2 y L3, el código convierte todas las
 acciones `KC_DOWN` en Arriba; la imagen muestra ese resultado. En la base, Abajo se conserva.
 
-Las fuentes de Sofle se migraron desde `themakunga/public-dotfiles`, revisión
-`d04247cea7cb029a036994025541a2ba4762d9c0`. El flujo de compilación utiliza la misma revisión
-documentada de QMK: `b1aea2556040c28d58d611c8aef0082b5780bb6d` (0.34.5). Verifica la placa y el
-controlador físicos antes de grabar el firmware.
+Firmware builds use QMK revision `b1aea2556040c28d58d611c8aef0082b5780bb6d` (0.34.5). Verify the
+physical board and controller before flashing firmware.
 
 ## Distribución de eva02
 
@@ -94,6 +92,37 @@ qmk compile -kb themakunga/eva02 -km nicolas
 definiciones de teclado dentro de su copia local y los mapas externos mediante el espacio de
 usuario. La integración continua crea el mismo enlace antes de compilar, sin reemplazar archivos
 originales de QMK.
+
+## Build and flash with Make
+
+Run these commands from the repository root after completing the QMK setup above. Both keyboards use
+the `nicolas` keymap. GNU Make and an existing QMK development environment are required; the
+Makefile does not install tools or change QMK configuration.
+
+```sh
+make help
+make build eva01
+make flash eva01
+make build eva02
+make flash eva02
+```
+
+`make` without arguments shows help. `make slash eva01` and `make slash eva02` are aliases for
+`flash`. Choose exactly one keyboard per command; missing or unknown keyboard names fail before QMK
+runs. `make build` uses `qmk compile`; `make flash` uses `qmk flash`, which compiles and then writes
+firmware, so a separate build is optional.
+
+Connect the intended keyboard half over USB and follow QMK's prompt to enter bootloader mode. Repeat
+the flash command for the other half when updating both controllers. Verify the board and controller
+against its hardware guide first; the standard profiles target ATmega32U4, not RP2040. To preview a
+command without building or flashing, use `make -n flash eva01`. See the
+[QMK flashing guide](https://docs.qmk.fm/newbs_flashing) for the underlying command.
+
+The command tests simulate QMK and never access hardware:
+
+```sh
+python3 -m unittest discover -s tests -p test_makefile.py
+```
 
 ## Agregar un teclado
 

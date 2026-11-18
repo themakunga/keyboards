@@ -1,9 +1,7 @@
 # eva01 — Sofle RGB
 
-Mapa QMK `nicolas`, migrado desde
-[`themakunga/public-dotfiles`](https://github.com/themakunga/public-dotfiles/tree/d04247cea7cb029a036994025541a2ba4762d9c0/qmk/sofle/nicolas).
-El teclado se llama `eva01`, su destino QMK es `themakunga/eva01` y el mapa conserva el nombre
-`nicolas`. Se mantiene la configuración de origen, con los cambios de teclas documentados abajo.
+The `nicolas` QMK keymap for `eva01` uses the `themakunga/eva01` target. The hardware, key
+assignments and OLED behavior are documented below.
 
 ## Hardware previsto
 
@@ -107,6 +105,5 @@ codificadores, y compila el módulo OLED real con sustitutos locales. Cubre etiq
 modificadores, estado de capas, nuevos intentos RPC, límites de pantalla y conservación de los
 píxeles centrales de la animación.
 
-Estas comprobaciones no validan los pines físicos, el sentido real de los codificadores, la
-orientación del OLED, el brillo real ni el tamaño final del firmware. No se ha grabado el teclado
-como parte de esta migración.
+These checks do not validate physical pins, encoder direction, OLED orientation, actual brightness
+or final firmware size. Hardware validation requires building and testing the firmware on the board.

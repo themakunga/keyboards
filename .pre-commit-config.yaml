@@ -27,6 +27,12 @@ repos:
       - id: markdownlint-cli2
   - repo: local
     hooks:
+      - id: makefile-tests
+        name: Makefile build and flash command tests
+        entry: python3 -m unittest discover -s tests -p test_makefile.py
+        language: system
+        files: ^(Makefile|qmk.json|tests/test_makefile.py)$
+        pass_filenames: false
       - id: release-version-tests
         name: Conventional release version tests
         entry: python3 -m unittest discover -s tests -p test_release_version.py
