@@ -72,6 +72,7 @@ class MakefileTests(unittest.TestCase):
     def firmware(self):
         firmware = Path(self.directory.name) / "qmk firmware"
         (firmware / "keyboards").mkdir(parents=True)
+        (firmware / "paths.mk").touch()
         return firmware
 
     def test_setup_links_and_configures_userspace_repeatably(self):
@@ -93,8 +94,59 @@ class MakefileTests(unittest.TestCase):
         self.assertTrue((firmware / "keyboards/sofle/v2").is_symlink())
         self.assertTrue((firmware / "keyboards/corne/v2").is_symlink())
 
+    def fake_git(self):
+        git = Path(self.directory.name) / "git"
+        git.write_text(
+            '#!/bin/sh\nprintf "%s\\n" "$*" >> "$QMK_GIT_CALLS"\n'
+            'if [ "$1" = init ]; then mkdir -p "$2"; fi\n'
+            'if [ "${QMK_GIT_FAIL:-}" = fetch ] && [ "$3" = fetch ]; then exit 1; fi\n'
+            'if [ "$3" = checkout ]; then mkdir -p "$2/keyboards"; touch "$2/paths.mk"; fi\n'
+        )
+        git.chmod(0o755)
+        self.env["QMK_GIT_CALLS"] = str(Path(self.directory.name) / "git-calls")
+        return Path(self.env["QMK_GIT_CALLS"])
+
+    def test_setup_bootstraps_missing_checkout(self):
+        git_calls = self.fake_git()
+        firmware = Path(self.directory.name) / "new qmk firmware"
+        result = self.make("setup", f"QMK_HOME={firmware}")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("QMK_HOME has no keyboards directory", result.stderr)
+        self.assertTrue((firmware / "keyboards/corne/v2").is_symlink())
+        commands = git_calls.read_text()
+        revision = "b1aea2556040c28d58d611c8aef0082b5780bb6d"
+        self.assertIn(f"fetch --depth=1 origin {revision}", commands)
+        self.assertIn(f"checkout --detach {revision}", commands)
+        self.assertIn("submodule update --init --recursive --depth=1", commands)
+        self.assertEqual(self.make("setup", f"QMK_HOME={firmware}").returncode, 0)
+        self.assertEqual(git_calls.read_text(), commands)
+
+    def test_missing_qmk_cli_is_reported_before_downloading(self):
+        git_calls = self.fake_git()
+        (Path(self.directory.name) / "qmk").unlink()
+        self.env["PATH"] = f"{self.directory.name}:/usr/bin:/bin"
+        firmware = Path(self.directory.name) / "new qmk firmware"
+        result = self.make("setup", f"QMK_HOME={firmware}")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("QMK CLI not found", result.stderr)
+        self.assertFalse(firmware.exists())
+        self.assertFalse(git_calls.exists())
+
+    def test_failed_download_preserves_missing_checkout_and_configuration(self):
+        self.fake_git()
+        self.env["QMK_GIT_FAIL"] = "fetch"
+        firmware = Path(self.directory.name) / "new qmk firmware"
+        result = self.make("setup", f"QMK_HOME={firmware}")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(firmware.exists())
+        self.assertFalse(list(firmware.parent.glob(firmware.name + ".bootstrap.*")))
+        self.assertFalse(self.calls.exists())
+
     def test_setup_with_invalid_checkout_does_not_configure_qmk(self):
-        result = self.make("setup", f"QMK_HOME={self.directory.name}/missing")
+        firmware = Path(self.directory.name) / "incomplete checkout"
+        firmware.mkdir()
+        (firmware / "keyboards").mkdir()
+        result = self.make("setup", f"QMK_HOME={firmware}")
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.calls.exists())
 

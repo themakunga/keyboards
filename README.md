@@ -86,8 +86,7 @@ python3 scripts/check_eva02.py
 
 ## Compilar los teclados
 
-Use an existing QMK Firmware checkout at revision `b1aea2556040c28d58d611c8aef0082b5780bb6d`. From
-this repository root:
+With QMK CLI, Git and the QMK toolchain available, run from this repository root:
 
 ```sh
 make setup
@@ -95,9 +94,16 @@ make setup
 make setup QMK_HOME="/path/to/qmk_firmware"
 ```
 
-`QMK_HOME` defaults to `$HOME/qmk_firmware`. `make setup` links both keyboard revisions, saves QMK's
-firmware and userspace paths, then runs `qmk userspace-doctor`. It requires an existing checkout and
-QMK tools; it does not clone QMK, install dependencies or flash hardware.
+`QMK_HOME` defaults to `$HOME/qmk_firmware`. If that path is absent, `make setup` downloads QMK
+revision `b1aea2556040c28d58d611c8aef0082b5780bb6d` and its submodules into a temporary directory,
+then places the completed checkout at `QMK_HOME`. A failed download leaves the destination absent
+and can be retried. Existing checkouts are preserved; an incomplete directory or conflicting link is
+rejected rather than overwritten.
+
+Setup then links both keyboard revisions, saves QMK's firmware/userspace paths and runs
+`qmk userspace-doctor`. QMK CLI and the compiler tools must already be available. Missing QMK CLI is
+reported before downloading anything; activate the declared QMK toolchain first. Setup does not
+install packages, switch system configuration or flash hardware.
 
 ```sh
 make update

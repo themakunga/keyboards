@@ -34,17 +34,18 @@ endif
 help:
 	@printf '%s\n' 'Usage: make <command> [keyboard]' '' \
 	  'Commands:' \
-	  '  setup          Link keyboards and configure QMK userspace' \
+	  '  setup          Prepare QMK checkout and configure userspace' \
 	  '  update         Refresh local keyboard links in QMK' \
 	  '  build eva01    Compile eva01 firmware' \
 	  '  flash eva01    Compile and flash eva01 firmware' \
 	  '  slash eva01    Alias for flash' \
 	  '  help           Show this help (default)' '' \
 	  'Keyboards: $(KEYBOARDS)' \
-	  'Requires an existing QMK environment and the setup documented in README.md.' \
+	  'Requires QMK CLI and Git; setup creates a missing firmware checkout.' \
 	  'Override the checkout with QMK_HOME=/path/to/qmk_firmware.'
 
-setup: update
+setup:
+	QMK_HOME="$(QMK_HOME)" sh scripts/setup-qmk.sh
 	qmk config user.qmk_home="$(QMK_HOME)"
 	qmk config user.overlay_dir="$(CURDIR)"
 	qmk userspace-doctor
