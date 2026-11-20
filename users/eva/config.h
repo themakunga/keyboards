@@ -1,0 +1,8 @@
+#pragma once
+
+#define SPLIT_TRANSACTION_IDS_USER EVA_OLED_SYNC
+#define OLED_TIMEOUT 60000
+#define OLED_UPDATE_INTERVAL 50
+#define OLED_FONT_H "font_ascii.c"
+#define OLED_FONT_START 32
+#define OLED_FONT_END 126

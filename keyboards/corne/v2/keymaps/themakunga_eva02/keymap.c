@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include QMK_KEYBOARD_H
+#include "eva_oled.h"
 
 enum tap_dance_actions { TD_SPC_ENT };
 tap_dance_action_t tap_dance_actions[] = {
@@ -30,15 +31,27 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     ),
 };
 
-#ifdef OLED_ENABLE
-bool oled_task_user(void) {
-    oled_set_cursor(0, 0);
-    oled_write_ln_P(PSTR("CORNE / EVA-02"), false);
-    switch (get_highest_layer(layer_state)) {
-        case 1: oled_write_ln_P(PSTR("L2: NUM + SYMBOL     "), false); break;
-        case 2: oled_write_ln_P(PSTR("L3: FN + MEDIA + RGB "), false); break;
-        default: oled_write_ln_P(PSTR("BASE: QWERTY         "), false); break;
-    }
-    return false;
+void keyboard_post_init_user(void) { eva_oled_init(); }
+
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    eva_oled_record(keycode, record);
+    return true;
 }
-#endif
+
+void housekeeping_task_user(void) { eva_oled_housekeeping(); }
+
+oled_rotation_t oled_init_user(oled_rotation_t rotation) {
+    (void)rotation;
+    return is_keyboard_left() ? OLED_ROTATION_0 : OLED_ROTATION_270;
+}
+
+bool oled_task_user(void) {
+    if (is_keyboard_left()) {
+        oled_set_cursor(0, 0);
+        oled_write_ln_P(PSTR("CORNE / EVA-02"), false);
+        oled_write_ln_P(PSTR("L2: num + symbols"), false);
+        oled_write_ln_P(PSTR("L3: media + RGB"), false);
+        return false;
+    }
+    return eva_oled_render();
+}

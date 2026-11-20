@@ -2,9 +2,6 @@
 
 // Standard Sofle RGB with Pro Micro ATmega32U4, USB on the left half.
 #define MASTER_LEFT
-#define SPLIT_TRANSACTION_IDS_USER EVA_OLED_SYNC
-#define OLED_TIMEOUT 60000
-#define OLED_UPDATE_INTERVAL 50
 
 // Initial cursor step per encoder detent; tune on the physical keyboard.
 #define MOUSEKEY_MOVE_DELTA 16  // ponytail: tune up/down per detent feel
@@ -22,6 +19,3 @@
 // This keymap uses dedicated modifiers and momentary layers, not tap-hold.
 #define NO_ACTION_TAPPING
 #define NO_ACTION_ONESHOT
-#define OLED_FONT_H "font_ascii.c"
-#define OLED_FONT_START 32
-#define OLED_FONT_END 126

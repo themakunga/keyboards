@@ -2,9 +2,6 @@
 
 // Standard Corne v2 with Pro Micro ATmega32U4, USB on the left half.
 #define MASTER_LEFT
-#define SPLIT_LAYER_STATE_ENABLE
-#define OLED_TIMEOUT 60000
-#define OLED_UPDATE_INTERVAL 50
 
 #undef RGB_MATRIX_MAXIMUM_BRIGHTNESS
 #define RGB_MATRIX_MAXIMUM_BRIGHTNESS 100

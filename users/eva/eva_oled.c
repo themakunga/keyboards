@@ -3,7 +3,7 @@
 #include "bongo/bongo_cat.h"
 #include <string.h>
 
-// Physical 128x32 OLED, landscape, default QMK 6x8 font.
+// Right OLED: portrait 32x128, default QMK 6x8 font.
 // Three recent key labels are transient display state, not a persistent log.
 typedef struct {
     uint8_t layer, mods, frame;
@@ -154,32 +154,39 @@ void eva_oled_housekeeping(void) {
     }
 }
 
-static void text_at(uint8_t col, uint8_t row, const char *text, bool inverted) {
-    oled_set_cursor(col, row);
+static void text_at(uint8_t row, const char *text, bool inverted) {
+    oled_set_cursor(0, row);
     oled_write(text, inverted);
+    for (uint8_t i = strlen(text); i < 5; ++i) oled_write(" ", inverted);
+}
+
+// Control, Command, Option/Alt and Shift, one 12x12 icon per row.
+static const uint16_t PROGMEM modifier_icons[4][12] = {
+    {0x000, 0x000, 0x000, 0x060, 0x0F0, 0x198, 0x30C, 0x606, 0x000, 0x000, 0x000, 0x000},
+    {0x000, 0x306, 0x489, 0x489, 0x7FE, 0x108, 0x108, 0x7FE, 0x489, 0x489, 0x306, 0x000},
+    {0x000, 0x000, 0xE1F, 0x300, 0x180, 0x0C0, 0x060, 0x030, 0x018, 0x00F, 0x000, 0x000},
+    {0x000, 0x060, 0x090, 0x108, 0x204, 0x402, 0x70E, 0x108, 0x108, 0x108, 0x1F8, 0x000},
+};
+
+static void icon_at(uint8_t top, const uint16_t icon[12], bool inverted) {
+    for (uint8_t y = 0; y < 12; ++y) {
+        uint16_t row = pgm_read_word(&icon[y]);
+        for (uint8_t x = 0; x < 12; ++x)
+            oled_write_pixel(10 + x, top + y, !!(row & (1 << (11 - x))) ^ inverted);
+    }
 }
 
 bool eva_oled_render(void) {
     if (is_keyboard_left()) return false;
     render_bongo_cat(state.frame);
-    // Clear left zone (x=0..46) and right zone (x=96..127); x=47 reserved for separator.
-    for (uint8_t y = 0; y < 32; ++y) {
-        for (uint8_t x = 0;  x < 47;  ++x) oled_write_pixel(x, y, false);
-        for (uint8_t x = 96; x < 128; ++x) oled_write_pixel(x, y, false);
-    }
-    // Row 0: layer name as inverted title bar (full left zone width = 8 chars)
-    const char *name = state.layer == 0 ? " BASE   " :
-                       state.layer == 1 ? " SYMBOL " : "   FN   ";
-    text_at(0, 0, name, true);
-    // Rows 1-2: modifier blocks — inverted when active, 3-char labels at cols 0-2 and 4-6
-    // (stops at col 6 so x=47 is never overwritten by inactive text)
-    text_at(0, 1, "CMD", state.mods & MOD_MASK_GUI);
-    text_at(4, 1, "CTL", state.mods & MOD_MASK_CTRL);
-    text_at(0, 2, "OPT", state.mods & MOD_MASK_ALT);
-    text_at(4, 2, "SFT", state.mods & MOD_MASK_SHIFT);
-    // Right zone: last 3 keys, rows 0-2 (header removed — keys speak for themselves)
-    for (uint8_t i = 0; i < 3; ++i) text_at(16, i, state.keys[i], false);
-    // Separator drawn last so it overrides any pixel at x=47
-    for (uint8_t y = 0; y < 32; ++y) oled_write_pixel(47, y, true);
+    for (uint8_t i = 0; i < 3; ++i) text_at(4 + i, state.keys[i], false);
+    // Three stacked planes: base at the bottom, L2 in the middle, L3 at the top.
+    for (uint8_t plane = 0; plane < 3; ++plane)
+        for (uint8_t y = 0; y < 3; ++y)
+            for (uint8_t x = 0; x < 12; ++x)
+                oled_write_pixel(10 + x, 61 + 4 * plane + y,
+                                 y != 1 || x == 0 || x == 11 || state.layer == 2 - plane);
+    const uint8_t masks[] = {MOD_MASK_CTRL, MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_SHIFT};
+    for (uint8_t i = 0; i < 4; ++i) icon_at(76 + 13 * i, modifier_icons[i], state.mods & masks[i]);
     return false;
 }

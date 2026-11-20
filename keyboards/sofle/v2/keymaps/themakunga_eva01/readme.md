@@ -10,7 +10,7 @@ are documented below.
 - USB en la mitad izquierda (`MASTER_LEFT`).
 - Matriz estándar: 58 teclas y dos pulsadores de codificador.
 - Matriz RGB: 72 LED, 36 por mitad, pin D3.
-- OLED: SSD1306, 128 × 32 píxeles, orientación horizontal.
+- OLED: SSD1306, 128 × 32 physical pixels; left landscape, right portrait (32 × 128).
 
 Estos datos proceden de la configuración original. Comprueba las marcas de la placa y el controlador
 antes de grabar el firmware. Este destino no describe Sofle Keyhive, Sofle Choc ni un controlador
@@ -70,33 +70,42 @@ violeta 191/255. La configuración guardada en EEPROM puede reemplazar los valor
 
 ## OLED y animación
 
-El OLED izquierdo muestra el nombre del teclado y recordatorios de las capas. El derecho muestra la
-capa activa, indicadores de modificadores, las últimas tres pulsaciones y Bongo Cat. El estado se
-sincroniza mediante RPC de QMK; la animación reacciona a las pulsaciones y vuelve al reposo después
-de 220 ms.
+The left OLED shows the keyboard name and layer reminders in landscape orientation. The right OLED
+uses 270-degree rotation for a 32 × 128 portrait layout, from top to bottom:
+
+- Bongo Cat in a 32 × 24 header, adapted from the original artwork.
+- The last three keypresses, newest first, one label per line.
+- A three-plane layer icon: bottom filled for base, middle for L2 (symbols), top for L3
+  (functions/media).
+- Control, Command, Option/Alt and Shift icons in a single vertical column. Active modifiers are
+  inverted; both left and right modifier keys activate the corresponding icon.
+
+Both EVA keymaps use the renderer, animation and font in `users/eva/`. QMK RPC synchronizes the
+state between halves. The animation reacts to keypresses and returns to idle after 220 ms. Recent
+keys are transient display state, not a persistent log.
 
 El código original de Bongo Cat atribuye la autoría a
 [dancarroll/qmk-bongo](https://github.com/dancarroll/qmk-bongo), James Incandenza, pixelbenny y
-obosob. Se conservan los avisos de derechos de autor y ambos archivos de licencia originales. El
-texto completo de la GPL está en [LICENSE](LICENSE); el archivo heredado `bongo/LICENSE` está vacío.
-`rules.mk` compila `bongo/bongo_cat.c`; la copia adicional en la raíz se conserva del repositorio de
-origen.
+obosob. Se conservan los avisos de derechos de autor y ambos archivos de licencia originales. The
+full GPL is in [LICENSE](LICENSE); the inherited `users/eva/bongo/LICENSE` file is empty.
+`users/eva/rules.mk` compiles the shared `users/eva/bongo/bongo_cat.c`; the additional copy in this
+keymap directory is retained from the original repository.
 
-El OLED utiliza la fuente ASCII reducida de QMK incluida, con caracteres visibles del 32 al 126. La
-orientación física debe comprobarse en el montaje real.
+Text uses the included QMK ASCII subset (characters 32–126); modifier icons use separate bitmaps.
+Verify the physical right OLED orientation on the assembled keyboard.
 
 ## Comprobaciones locales
 
 Ejecuta desde la raíz del repositorio:
 
 ```sh
-python3 keyboards/sofle/v2/keymaps/themakunga_eva01/check_oled.py
+python3 scripts/check_oled.py
 ```
 
-Se necesitan Python 3 y un compilador de C. La comprobación verifica las asignaciones de teclas y
-codificadores, y compila el módulo OLED real con sustitutos locales. Cubre etiquetas, historial,
-modificadores, estado de capas, nuevos intentos RPC, límites de pantalla y conservación de los
-píxeles centrales de la animación.
+Python 3 and a C compiler are required. The check verifies key and encoder assignments and compiles
+the actual OLED module with local substitutes. It covers labels, recent-key ordering and clearing,
+all modifier combinations, layer changes, RPC retries, portrait pixel bounds and preservation of the
+complete adapted animation frames.
 
 These checks do not validate physical pins, encoder direction, OLED orientation, actual brightness
 or final firmware size. Hardware validation requires building and testing the firmware on the board.

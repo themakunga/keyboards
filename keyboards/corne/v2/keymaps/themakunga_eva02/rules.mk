@@ -1,3 +1,4 @@
+USER_NAME := eva
 VIA_ENABLE = no
 EXTRAKEY_ENABLE = yes
 OLED_ENABLE = yes

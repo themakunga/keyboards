@@ -46,10 +46,10 @@ repos:
         files: ^(scripts/release_version.py|tests/test_release_version.py)$
         pass_filenames: false
       - id: sofle-checks
-        name: EVA01 keyboard, keymap and OLED checks
-        entry: python3 keyboards/sofle/v2/keymaps/themakunga_eva01/check_oled.py
+        name: EVA keyboard, keymap and shared OLED checks
+        entry: python3 scripts/check_oled.py
         language: system
-        files: ^keyboards/sofle/v2/
+        files: ^(keyboards/(sofle|corne)/|users/eva/|scripts/check_oled.py$)
         pass_filenames: false
       - id: eva02-checks
         name: EVA02 hardware, keymap and diagram checks

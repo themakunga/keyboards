@@ -6,8 +6,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-root = Path(__file__).resolve().parent
-board = json.loads((root.parents[1] / 'keyboard.json').read_text())
+repo = Path(__file__).resolve().parents[1]
+keymap_root = repo / 'keyboards/sofle/v2/keymaps/themakunga_eva01'
+root = repo / 'users/eva'
+board = json.loads((keymap_root.parents[1] / 'keyboard.json').read_text())
 assert board['keyboard_name'] == 'Sofle v2 RGB' and board['maintainer'] == 'themakunga'
 assert board['development_board'] == 'promicro'
 assert board['matrix_pins'] == {'cols': ['F6', 'F7', 'B1', 'B3', 'B2', 'B6'],
@@ -17,7 +19,7 @@ assert board['split']['serial']['pin'] == 'D2' and board['ws2812']['pin'] == 'D3
 assert board['rgb_matrix']['split_count'] == [36, 36]
 source = (root / 'eva_oled.c').read_text()
 
-keymap = (root / 'keymap.c').read_text()
+keymap = (keymap_root / 'keymap.c').read_text()
 blocks = re.findall(r'\[([012])\] = LAYOUT\((.*?)\n    \)', keymap, re.S)
 assert len(blocks) == 3
 presses = [('MS_BTN1', 'MS_BTN2'), ('KC_MUTE', 'KC_HOME'), ('KC_MUTE', 'G(C(KC_Q))')]
@@ -38,7 +40,17 @@ assert [re.sub(r'\s+', '', value) for value in encoders] == [
     'A(KC_UP),A(KC_DOWN)', 'A(KC_LEFT),A(KC_RGHT)',
     'KC_VOLD,KC_VOLU', 'KC_BRMD,KC_BRMU',
 ]
-assert 'VIA_ENABLE = no' in (root / 'rules.mk').read_text()
+for family, name in [('sofle', 'eva01'), ('corne', 'eva02')]:
+    keymap_path = repo / f'keyboards/{family}/v2/keymaps/themakunga_{name}'
+    code = (keymap_path / 'keymap.c').read_text()
+    assert 'return is_keyboard_left() ? OLED_ROTATION_0 : OLED_ROTATION_270;' in code
+    for callback in ['eva_oled_init();', 'eva_oled_record(keycode, record);',
+                     'eva_oled_housekeeping();', 'return eva_oled_render();']:
+        assert callback in code
+    assert 'USER_NAME := eva' in (keymap_path / 'rules.mk').read_text()
+assert 'SRC += eva_oled.c bongo/bongo_cat.c' in (root / 'rules.mk').read_text()
+assert '#define SPLIT_TRANSACTION_IDS_USER EVA_OLED_SYNC' in (root / 'config.h').read_text()
+assert 'VIA_ENABLE = no' in (keymap_root / 'rules.mk').read_text()
 
 known = {'KC_A': 4, 'KC_Z': 29, 'KC_1': 30, 'KC_0': 39, 'KC_F1': 58, 'KC_F12': 69}
 for number, name in enumerate(sorted(set(re.findall(r'\b(?:KC|MS|RM)_\w+', source)) - known.keys()), 256):
@@ -50,6 +62,7 @@ header = '''
 #include <stddef.h>
 #define PROGMEM
 #define pgm_read_byte(p) (*(const unsigned char *)(p))
+#define pgm_read_word(p) (*(const uint16_t *)(p))
 #define MO(n) (0x5000 + (n))
 #define EVA_OLED_SYNC 1
 #define MOD_MASK_GUI 0x88
@@ -92,29 +105,37 @@ test = r'''
 #include <stdio.h>
 #include "eva_oled.c"
 #include "bongo/bongo_cat.c"
+#include "font_ascii.c"
 static unsigned pixels;
 static uint8_t cursor_row, cursor_col;
-static char lines[4][22];
-static bool inverse[4][22];
-static bool canvas[32][128];
+static char lines[16][6];
+static bool inverse[16][6];
+static bool canvas[128][32];
 static void oled_set_cursor(uint8_t x, uint8_t y) {
-    assert(x < 22 && y < 4); cursor_row = y; cursor_col = x;
+    assert(x < 5 && y < 16); cursor_row = y; cursor_col = x;
 }
 static void oled_write(const char *text, bool inverted) {
-    assert(cursor_col + strlen(text) <= 21);
-    memcpy(lines[cursor_row] + cursor_col, text, strlen(text));
-    for (size_t i = 0; i < strlen(text); ++i) inverse[cursor_row][cursor_col+i] = inverted;
+    assert(cursor_col + strlen(text) <= 5);
+    while (*text) {
+        assert(*text >= 32 && *text <= 126);
+        lines[cursor_row][cursor_col] = *text;
+        inverse[cursor_row][cursor_col] = inverted;
+        for (uint8_t x = 0; x < 6; ++x)
+            for (uint8_t y = 0; y < 8; ++y)
+                canvas[cursor_row*8+y][cursor_col*6+x] =
+                    !!(font[(*text-32)*6+x] & (1 << y)) ^ inverted;
+        ++cursor_col;
+        ++text;
+    }
 }
 static void oled_write_pixel(uint8_t x, uint8_t y, bool on) {
-    assert(x < 128 && y < 32); canvas[y][x] = on; ++pixels;
+    assert(x < 32 && y < 128); canvas[y][x] = on; ++pixels;
 }
 static void oled_write_raw_P(const char *data, uint16_t size) {
-    assert(cursor_col == 0 && cursor_row == 0 && size == 512);
-    for (unsigned y = 0; y < 32; ++y)
-        for (unsigned x = 0; x < 128; ++x)
-            canvas[y][x] = ((uint8_t)data[y/8*128+x] >> (y%8)) & 1;
-    memset(lines, 0, sizeof(lines));
-    memset(inverse, 0, sizeof(inverse));
+    assert(cursor_col == 0 && cursor_row == 0 && size == 96);
+    for (unsigned y = 0; y < 24; ++y)
+        for (unsigned x = 0; x < 32; ++x)
+            canvas[y][x] = ((uint8_t)data[y/8*32+x] >> (y%8)) & 1;
 }
 int main(void) {
     char name[6];
@@ -139,33 +160,55 @@ int main(void) {
     eva_oled_housekeeping(); assert(sends == 1);
     now += 50; eva_oled_housekeeping(); assert(sends == 2);
     now += 220; eva_oled_housekeeping(); assert(state.frame == 0);
-    eva_oled_render(); assert(pixels && inverse[1][0] && inverse[1][4] && !inverse[2][0]);
-    assert(!strncmp(lines[0], "   FN   ", 8));
+    eva_oled_render(); assert(pixels);
+    assert(!strcmp(lines[4], "Home ") && !strcmp(lines[5], "@    ") && !strcmp(lines[6], "A    "));
     unsigned previous = pixels; left = true; eva_oled_render(); assert(pixels == previous);
     left = false; master = false; event.event.pressed = true;
     eva_oled_record(KC_Z, &event); assert(!strcmp(state.keys[0], "Home"));
     display_state_t packet = {.layer = 1, .frame = 2, .keys = {"B"}};
     receiver(1, &packet, 0, NULL); assert(state.layer == 2);
     receiver(sizeof(packet), &packet, 0, NULL); assert(state.layer == 1);
-    eva_oled_render(); assert(!strcmp(lines[0]+16, "B"));
-    assert(sizeof(waiting_frame) == 512);
-    assert(memcmp(animation_frames[0], animation_frames[1], 512));
+    eva_oled_render(); assert(!strcmp(lines[4], "B    "));
+    assert(!strcmp(lines[5], "     ") && !strcmp(lines[6], "     "));
+    for (uint8_t layer = 0; layer < 3; ++layer) {
+        state.layer = layer;
+        eva_oled_render();
+        for (uint8_t plane = 0; plane < 3; ++plane) {
+            assert(canvas[62+4*plane][10] && canvas[62+4*plane][21]);
+            assert(canvas[62+4*plane][16] == (layer == 2-plane));
+            assert(!canvas[60+4*plane][16]);
+        }
+    }
+    assert(sizeof(waiting_frame) == 96);
+    assert(memcmp(animation_frames[0], animation_frames[1], 96));
     const char *frames[] = {waiting_frame, animation_frames[0], animation_frames[1], ready_frame};
     for (uint8_t frame = 0; frame < 4; ++frame) {
         state.frame = frame;
         eva_oled_render();
-        // All original central sprite pixels survive the status overlays.
-        for (unsigned y = 0; y < 32; ++y)
-            for (unsigned x = 48; x < 96; ++x)
-                assert(canvas[y][x] == (((uint8_t)frames[frame][y/8*128+x] >> (y%8)) & 1));
+        // The complete portrait sprite survives the status overlays.
+        for (unsigned y = 0; y < 24; ++y)
+            for (unsigned x = 0; x < 32; ++x)
+                assert(canvas[y][x] == (((uint8_t)frames[frame][y/8*32+x] >> (y%8)) & 1));
     }
-    puts("OK: labels, history, modifiers, layer, upstream sprite, pixel bounds, RPC, retry throttle");
+    const uint8_t masks[] = {MOD_MASK_CTRL, MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_SHIFT};
+    // Both sides of every modifier and all combinations invert only their own icons.
+    for (unsigned mods = 0; mods < 256; ++mods) {
+        state.mods = mods;
+        eva_oled_render();
+        for (uint8_t i = 0; i < 4; ++i)
+            for (uint8_t y = 0; y < 12; ++y)
+                for (uint8_t x = 0; x < 12; ++x)
+                    assert(canvas[76+13*i+y][10+x] ==
+                        (!!(modifier_icons[i][y] & (1 << (11-x))) ^ !!(mods & masks[i])));
+    }
+    puts("OK: labels, history, modifiers, layer, portrait sprite, pixel bounds, RPC, retry throttle");
 }
 '''
 with tempfile.TemporaryDirectory() as directory:
     tmp = Path(directory)
     (tmp / 'mock.h').write_text(header)
     (tmp / 'transactions.h').write_text(transactions)
+    (tmp / 'progmem.h').write_text('#pragma once\n')
     (tmp / 'test.c').write_text(test)
     binary = tmp / 'test'
     subprocess.run([os.environ.get('CC', 'cc'), '-std=c11', '-Wall', '-Wextra', '-Werror',

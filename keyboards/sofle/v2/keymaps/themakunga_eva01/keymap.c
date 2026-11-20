@@ -59,7 +59,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 void housekeeping_task_user(void) { eva_oled_housekeeping(); }
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     (void)rotation;
-    return OLED_ROTATION_0;
+    return is_keyboard_left() ? OLED_ROTATION_0 : OLED_ROTATION_270;
 }
 bool oled_task_user(void) {
     if (is_keyboard_left()) {

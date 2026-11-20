@@ -37,8 +37,8 @@ assert layers[0][1:11] == base[13:23]
 assert layers[0][12:36] == base[24:42] + base[44:50]
 assert 'ACTION_TAP_DANCE_DOUBLE(KC_SPC, KC_ENT)' in source
 assert 'ko_make_basic(MOD_MASK_SHIFT, TD(TD_SPC_ENT), KC_ENT)' in source
-oled_lines = re.findall(r'oled_write_ln_P\(PSTR\("((?:BASE|L2|L3):[^"]*)"\)', source)
-assert len(oled_lines) == 3 and all(len(line) == 21 for line in oled_lines)
+assert 'return eva_oled_render();' in source
+assert 'eva_oled_record(keycode, record);' in source
 assert (board_path / 'keymaps/themakunga_eva02/keymap.c').is_file()
 config = board_path / 'keymaps/themakunga_eva02/config.h'
 macros = subprocess.run(['cc', '-E', '-dM', '-Werror', '-D', 'RGB_MATRIX_MAXIMUM_BRIGHTNESS=120',

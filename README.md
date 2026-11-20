@@ -10,6 +10,8 @@ un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
 | Sofle RGB | v2      | `sofle/v2` | `themakunga_eva01` | [Hardware, layout and OLED](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md) |
 | Corne     | v2      | `corne/v2` | `themakunga_eva02` | [Hardware, layout and OLED](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) |
 
+`users/eva/` contains the shared OLED renderer, animation and font for both keymaps.
+
 Hardware definitions are grouped by keyboard family and version; personal keymaps live beneath
 `keymaps/`:
 
@@ -71,7 +73,7 @@ pre-commit install
 pre-commit run --all-files
 ```
 
-Los controles verifican los mapas de ambos teclados, la imagen de eva02, el módulo OLED de Sofle,
+Los controles verifican los mapas de ambos teclados, la imagen de eva02, el módulo OLED compartido,
 YAML, JSON, formato, Markdown, ortografía en inglés y español, claves privadas y archivos grandes.
 El control de mensajes exige Conventional Commits, por ejemplo `feat: add keyboard keymap`. GitHub
 Actions ejecuta las mismas comprobaciones de archivos al publicar cambios y en las solicitudes de
@@ -80,7 +82,7 @@ integración.
 La comprobación de Sofle necesita Python 3 y un compilador de C (`cc`):
 
 ```sh
-python3 keyboards/sofle/v2/keymaps/themakunga_eva01/check_oled.py
+python3 scripts/check_oled.py
 python3 scripts/check_eva02.py
 ```
 

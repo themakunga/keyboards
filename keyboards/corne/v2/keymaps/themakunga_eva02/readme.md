@@ -10,7 +10,7 @@ provides QWERTY, dedicated modifiers, three layers and a left-thumb Space/Enter 
 - USB en la mitad izquierda (`MASTER_LEFT`), comunicación serie por D2.
 - Matriz: filas D4, C6, D7 y E6; columnas F4, F5, F6, F7, B1 y B3.
 - Matriz RGB opcional: 54 LED, 27 por mitad, datos por D3.
-- OLED SSD1306 opcional: 128 × 32 píxeles, con nombre y capa activa en ambas mitades.
+- Optional SSD1306 OLED: 128 × 32 physical pixels; left landscape, right portrait (32 × 128).
 - Sin codificadores ni pulsadores adicionales.
 
 Este perfil declara el controlador Pro Micro estándar; comprueba el controlador real antes de
@@ -53,8 +53,26 @@ numérica del Sofle. No se utilizan modificadores al mantener teclas de letras n
 pulsación para acceder a las capas.
 
 El brillo RGB máximo es 100/255, con valor inicial 64/255 y tono violeta 191/255. Los valores
-guardados en EEPROM pueden reemplazar estos ajustes. Este mapa incluye un indicador OLED sencillo;
-la animación Bongo Cat y los controles de codificador pertenecen a eva01.
+guardados en EEPROM pueden reemplazar estos ajustes.
+
+## OLED
+
+Both EVA keymaps use the shared renderer, font and Bongo Cat animation in `users/eva/`. The left
+display shows the keyboard name and layer reminders. The right display uses 270-degree rotation for
+a 32 × 128 portrait layout, from top to bottom:
+
+- Bongo Cat, animated by keypresses and returning to idle after 220 ms.
+- The last three keypresses, newest first, one label per line.
+- A three-plane layer icon: bottom filled for base, middle for L2 (numbers/symbols), top for L3
+  (functions/media).
+- Control, Command, Option/Alt and Shift icons in a single column, inverted while active.
+
+QMK RPC synchronizes layer, modifiers, recent keys and animation between halves. Recent keys are
+transient display state, not a persistent log. Both left and right modifier keys activate the
+corresponding icon. Verify the physical OLED orientation on the assembled keyboard. The shared
+animation retains the original attribution and GPL notices from
+[dancarroll/qmk-bongo](https://github.com/dancarroll/qmk-bongo), James Incandenza, pixelbenny and
+obosob; the full license is in [users/eva/LICENSE](../../../../../users/eva/LICENSE).
 
 ## Compilación
 
@@ -75,6 +93,7 @@ halves use the same firmware. VIA is disabled.
 
 ```sh
 python3 scripts/check_eva02.py
+python3 scripts/check_oled.py
 pre-commit run --all-files
 ```
 

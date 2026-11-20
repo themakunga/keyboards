@@ -1,3 +1,4 @@
+USER_NAME := eva
 VIA_ENABLE = no
 ENCODER_MAP_ENABLE = yes
 MOUSEKEY_ENABLE = yes
@@ -10,7 +11,6 @@ LTO_ENABLE = yes
 CONSOLE_ENABLE = no
 COMMAND_ENABLE = no
 NKRO_ENABLE = no
-SRC += eva_oled.c bongo/bongo_cat.c
 TAP_DANCE_ENABLE = yes
 KEY_OVERRIDE_ENABLE = yes
 SPACE_CADET_ENABLE = no
