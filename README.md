@@ -10,7 +10,7 @@ un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
 
 |                           EVA-01 · Sofle RGB                           |                             EVA-02 · Corne                             |
 | :--------------------------------------------------------------------: | :--------------------------------------------------------------------: |
-|   ![EVA-01 purple and green pixel art sprite](docs/eva01-sprite.svg)   |    ![EVA-02 red and orange pixel art sprite](docs/eva02-sprite.svg)    |
+|                 ![EVA-01 helmet](docs/eva01-icon.png)                  |                 ![EVA-02 helmet](docs/eva02-icon.png)                  |
 | [EVA-01 keymap](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md) | [EVA-02 keymap](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) |
 
 ## Teclados registrados
