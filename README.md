@@ -1,7 +1,17 @@
 # Keyboards
 
+[![Checks](https://github.com/themakunga/keyboards/actions/workflows/checks.yaml/badge.svg)](https://github.com/themakunga/keyboards/actions/workflows/checks.yaml)
+[![Firmware](https://github.com/themakunga/keyboards/actions/workflows/firmware.yaml/badge.svg)](https://github.com/themakunga/keyboards/actions/workflows/firmware.yaml)
+[![Release](https://img.shields.io/github/v/release/themakunga/keyboards)](https://github.com/themakunga/keyboards/releases)
+[![QMK](https://img.shields.io/badge/QMK-0.34.5-333333?logo=qmk)](https://github.com/qmk/qmk_firmware/tree/b1aea2556040c28d58d611c8aef0082b5780bb6d)
+
 Configuraciones y mapas de teclas personales para [QMK Firmware](https://qmk.fm/), organizados como
 un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
+
+|                           EVA-01 · Sofle RGB                           |                             EVA-02 · Corne                             |
+| :--------------------------------------------------------------------: | :--------------------------------------------------------------------: |
+|   ![EVA-01 purple and green pixel art sprite](docs/eva01-sprite.svg)   |    ![EVA-02 red and orange pixel art sprite](docs/eva02-sprite.svg)    |
+| [EVA-01 keymap](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md) | [EVA-02 keymap](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) |
 
 ## Teclados registrados
 
