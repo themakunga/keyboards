@@ -30,13 +30,15 @@ For each glyph, ImageMagick renders the installed font at 256 points, trims the 
 inside 12 × 12 pixels, centers it in a 14 × 14 cell and thresholds it at 45 percent. Each C row
 stores the leftmost pixel in bit 13. No font installation is required to build the firmware.
 
-## Central monitor
+## Luna keyboard pet
 
-The active 32 × 24 monochrome art is a locally drawn monitor, with no cat or glasses. Two screen
-states react to keyboard output and an empty screen is used at rest. The existing
-`bongo/bongo_cat.c` renderer path is retained to keep the shared build/API unchanged.
+`luna.c` preserves the ten original 32 × 24 monochrome bitmap frames (two each for sit, walk, run,
+bark and sneak) from
+[HellSingCoder's Sofle keymap](https://github.com/HellSingCoder/qmk_firmware/blob/33d7fa1180d232dcdb024c68a8f4629dced32afb/keyboards/sofle/keymaps/helltm/keymap.c).
+Copyright 2021 HellSingCoder, GPL-2.0-or-later; the source notice is preserved and the full license
+is in [LICENSE](LICENSE).
 
-The earlier Bongo Cat reference was
-[zmk-nice-oled at 84a9880](https://github.com/mctechnology17/zmk-nice-oled/tree/84a98807fd97f8930859d1eb633966aaec17b72a).
-Its preserved notice is in [LICENSE.nice-oled](bongo/LICENSE.nice-oled). Existing GPL notices and
-the legacy source copy remain preserved; that reference artwork is no longer rendered.
+Adaptations: a standalone C renderer, portrait centering, a cleared jump region, explicit timeout,
+and input state sent from the left master over QMK RPC. The right build contains Luna only; the left
+contains Nerd Font status and the final keyboard output. No artwork was rescaled or redrawn. The
+former monitor animation is no longer built. Historical Bongo Cat license notices are retained.

@@ -1,24 +1,47 @@
 #include "eva_oled.h"
 #include "transactions.h"
 #include "host.h"
-#include "bongo/bongo_cat.h"
-#include "icons.h"
+#include "luna.h"
 #include <string.h>
 
-// Both OLEDs: portrait 32x128, QMK 6x8 text and rasterized Nerd Font icons.
+// Fixed USB-left roles let LTO discard unused master/peripheral paths.
+#ifdef EVA_RIGHT
+bool is_keyboard_master(void) { return false; }
+bool is_keyboard_left(void) { return false; }
+#else
+bool is_keyboard_master(void) { return true; }
+bool is_keyboard_left(void) { return true; }
+#endif
+
+static eva_pet_state_t pet;
+_Static_assert(sizeof(pet) <= 32, "Split RPC payload too large");
+
+#ifdef EVA_RIGHT
+static void receive_state(uint8_t size, const void *data, uint8_t out_size, void *out) {
+    (void)out_size;
+    (void)out;
+    if (size == sizeof(pet)) memcpy(&pet, data, sizeof(pet));
+}
+
+void eva_oled_init(void) { transaction_register_rpc(EVA_OLED_SYNC, receive_state); }
+void eva_oled_housekeeping(void) {}
+bool eva_oled_render(void) {
+    render_luna(&pet);
+    return false;
+}
+#else
+#include "icons.h"
+
 // Only the last transmitted keyboard action is transient display state.
 typedef struct {
-    uint8_t layer, mods, frame, last_mods;
+    uint8_t layer, mods, last_mods;
     char key[6];
 } display_state_t;
 static display_state_t state;
-static uint32_t last_press, last_attempt;
-static bool typing;
-static uint8_t stroke;
+static uint32_t last_attempt;
 static host_driver_t display_driver;
 static void (*forward_keyboard)(report_keyboard_t *);
 static report_keyboard_t previous_report;
-_Static_assert(sizeof(display_state_t) <= 32, "Split RPC payload too large");
 
 static void label(uint16_t keycode, char out[6]) {
     memset(out, 0, 6);
@@ -72,21 +95,12 @@ static void label(uint16_t keycode, char out[6]) {
     }
 }
 
-static void receive_state(uint8_t size, const void *data, uint8_t out_size, void *out) {
-    (void)out_size;
-    (void)out;
-    if (size != sizeof(state)) return;
-    memcpy(&state, data, sizeof(state));
-    state.key[5] = '\0';
-}
-
-void eva_oled_init(void) {
-    transaction_register_rpc(EVA_OLED_SYNC, receive_state);
-}
+void eva_oled_init(void) {}
 
 // Observe final reports so tap dance, remaps and overrides show their actual output.
 static void send_keyboard(report_keyboard_t *report) {
     forward_keyboard(report);
+    pet.space = memchr(report->keys, KC_SPC, KEYBOARD_REPORT_KEYS) != NULL;
     for (uint8_t i = 0; i < KEYBOARD_REPORT_KEYS; ++i) {
         uint8_t keycode = report->keys[i];
         if (keycode < KC_A || keycode >= KC_LCTL || memchr(previous_report.keys, keycode, KEYBOARD_REPORT_KEYS)) continue;
@@ -102,15 +116,13 @@ static void send_keyboard(report_keyboard_t *report) {
             const char *match = strchr(plain, state.key[0]);
             if (shifted && state.key[1] == '\0' && match) state.key[0] = upper[match - plain];
         }
-        last_press = timer_read32();
-        typing = true;
-        stroke ^= 1;
+        if (keycode == KC_SPC) ++pet.jumps;
     }
     previous_report = *report;
 }
 
 void matrix_scan_user(void) {
-    if (!is_keyboard_master() || forward_keyboard) return;
+    if (forward_keyboard) return;
     host_driver_t *driver = host_get_driver();
     if (!driver || !driver->send_keyboard) return;
     display_driver = *driver;
@@ -120,18 +132,19 @@ void matrix_scan_user(void) {
 }
 
 void eva_oled_housekeeping(void) {
-    if (!is_keyboard_master()) return;
     state.layer = get_highest_layer(layer_state | default_layer_state);
     state.mods = get_mods() | get_weak_mods();
 #ifndef NO_ACTION_ONESHOT
     state.mods |= get_oneshot_mods();
 #endif
-    if (typing && timer_elapsed32(last_press) >= 220) typing = false;
-    state.frame = typing ? 1 + stroke : 0;
+    pet.wpm = get_current_wpm();
+    pet.mods = state.mods;
+    pet.caps = host_keyboard_led_state().caps_lock;
+    pet.awake = last_input_activity_elapsed() < OLED_TIMEOUT || last_led_activity_elapsed() < OLED_TIMEOUT;
     // Throttle failures too, so a disconnected half cannot stall every scan.
     if (timer_elapsed32(last_attempt) >= 50) {
         last_attempt = timer_read32();
-        transaction_rpc_send(EVA_OLED_SYNC, sizeof(state), &state);
+        transaction_rpc_send(EVA_OLED_SYNC, sizeof(pet), &pet);
     }
 }
 
@@ -162,12 +175,13 @@ bool eva_oled_render(void) {
     const uint8_t masks[] = {MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_CTRL, MOD_MASK_SHIFT};
     for (uint8_t i = 0; i < 4; ++i)
         icon_at(1 + 16 * (i % 2), 24 + 16 * (i / 2), eva_icons[i], state.mods & masks[i]);
-    render_bongo_cat(state.frame);
     char chord[5] = {0};
     uint8_t length = 0;
     for (uint8_t i = 0; i < 4; ++i)
         if (state.last_mods & masks[i]) chord[length++] = "MACS"[i];
-    text_at(12, chord, false);
-    text_at(13, state.key, false);
+    text_at(8, chord, false);
+    text_at(9, state.key, false);
     return false;
 }
+
+#endif

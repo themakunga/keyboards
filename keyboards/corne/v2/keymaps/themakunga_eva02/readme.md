@@ -58,32 +58,35 @@ guardados en EEPROM pueden reemplazar estos ajustes.
 
 ## OLED and animation
 
-Both displays use 270-degree rotation and the same synchronized 32 × 128 portrait composition,
-shared by Sofle and Corne through `users/eva/`. The design follows
-[zmk-nice-oled](https://github.com/mctechnology17/zmk-nice-oled):
+Both halves use 270-degree rotation (32 × 128 portrait) and share `users/eva/`, with different
+content compiled into each side:
 
-- The Nerd Font layers glyph `` at the top: **1** for base, **2** for L2 and **3** for L3.
-- A 2 × 2 modifier grid: Command `󰘳` and Option/Alt `󰘵` above Control `󰘴` and Shift `󰘶`. Held
-  modifiers invert their 14 × 14 cells; either left or right modifier key activates its icon.
-- A monitor-only animation in the middle, without a cat or glasses. It reacts to keyboard output and
-  returns to idle after 220 ms.
-- Only the last transmitted character or shortcut below the monitor. Shortcut modifiers appear above
-  its key as compact `M` (Command), `A` (Alt), `C` (Control) and `S` (Shift) flags. For example,
-  `MC` above `Q` means Command+Control+Q. Releasing keys or pressing a layer/modifier alone
-  preserves the last output.
+- **Left / USB master:** the Nerd Font layers glyph (1/2/3), the 2 × 2 Command/Option/Control/Shift
+  grid and the last transmitted character or shortcut. Held modifiers invert their icons. Shortcut
+  flags use `M`, `A`, `C` and `S`; releasing keys or pressing only a layer/modifier preserves the
+  last output.
+- **Right / peripheral:**
+  [Luna by HellSingCoder](https://github.com/HellSingCoder/qmk_firmware/tree/33d7fa1180d232dcdb024c68a8f4629dced32afb/keyboards/sofle/keymaps/helltm).
+  The dog sits at up to 10 WPM, walks at 11–40 and runs above 40. Control makes it sneak, Caps Lock
+  makes it bark (taking priority over Control), and Space makes it jump. Short Space taps remain
+  visible even after release. The original ten 32 × 24 bitmap frames are preserved.
 
-![OLED framebuffer previews: base, L2 and L3](../../../../../docs/eva-oled-preview.png)
+![Actual OLED framebuffer previews: left status and right Luna](../../../../../docs/eva-oled-preview.png)
 
-The display observes final QMK 6-key USB reports, so tap dance, Shift overrides and the Sofle arrow
-remap show the resulting output. US Shift punctuation and Caps Lock are reflected in the displayed
-character. Host text transformations, dead keys and input methods cannot be inferred from USB key
-reports. Mouse, RGB and consumer/media reports do not replace the last keyboard output.
+The left display observes final QMK 6-key USB reports, including tap dance, Shift overrides and
+Sofle's arrow remap. US Shift punctuation and Caps Lock affect the character shown. Host text
+transformations, dead keys and input methods cannot be inferred from USB reports. Mouse, RGB and
+consumer/media reports do not replace the last keyboard output.
 
-QMK RPC synchronizes that single transient output, layer, held modifiers and animation between
-halves; no key history is retained. Text uses the included QMK ASCII subset. Nerd Font glyphs are
-pre-rendered bitmaps, so firmware builds do not require a font installation or UTF-8 support. See
-[asset provenance and licenses](../../../../../users/eva/ASSETS.md). Existing source notices and the
-legacy Bongo Cat copy remain preserved. Verify both OLED orientations on the real keyboard.
+A compact RPC packet sends only Luna's WPM, modifiers, Caps Lock, Space/jump and wake state from
+left to right, with attempts limited to once per 50 ms. Luna alternates frames every 200 ms and
+sleeps after 60 seconds of input/LED inactivity. Status glyphs and output formatting are absent from
+the right firmware; Luna's bitmaps are absent from the left. See
+[asset provenance and licenses](../../../../../users/eva/ASSETS.md).
+
+The side-specific firmware fixes the left half as USB master and the right as peripheral so LTO can
+remove unused role paths. Connect USB to the left during normal use. Match each firmware filename to
+its physical side; do not swap them. Verify both OLED orientations and split behavior on hardware.
 
 ## Compilación
 
@@ -91,14 +94,17 @@ Desde la raíz del repositorio, con un entorno QMK existente:
 
 ```sh
 make setup
-qmk compile -kb corne/v2 -km themakunga_eva02
+make build eva02
+make flash-left eva02
+make flash-right eva02
 ```
 
 Run `make setup QMK_HOME="/path/to/qmk_firmware"` for a custom checkout, or `make update` to refresh
 both revision links. See the root README for setup and update behavior.
 
-The **Build QMK firmware** and **Promote release** workflows compile the targets in `qmk.json`. Both
-halves use the same firmware. VIA is disabled.
+The **Build QMK firmware** and **Promote release** workflows compile the targets in `qmk.json`. The
+`themakunga_eva02_left` and `themakunga_eva02_right` targets include this shared keymap and
+configuration. Flash each matching side separately. VIA is disabled.
 
 ## Comprobaciones
 

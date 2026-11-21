@@ -35,25 +35,32 @@ class MakefileTests(unittest.TestCase):
         for args in [(), ("help",)]:
             result = self.make(*args)
             self.assertEqual(result.returncode, 0, result.stderr)
-            for word in ["setup", "update", "build", "flash", "slash", "eva01", "eva02"]:
+            for word in ["setup", "update", "build", "flash-left", "flash-right", "eva01", "eva02"]:
                 self.assertIn(word, result.stdout)
         self.assertFalse(self.calls.exists())
 
-    def test_build_flash_and_alias_for_each_registered_keyboard(self):
+    def test_build_compiles_both_sides_and_flash_selects_only_one(self):
         for keyboard, board in [("eva01", "sofle/v2"), ("eva02", "corne/v2")]:
-            for action, command in [("build", "compile"), ("flash", "flash"), ("slash", "flash")]:
+            for action, command, sides in [
+                ("build", "compile", ["left", "right"]),
+                ("flash-left", "flash", ["left"]),
+                ("flash-right", "flash", ["right"]),
+            ]:
                 with self.subTest(keyboard=keyboard, action=action):
                     result = self.make(action, keyboard)
                     self.assertEqual(result.returncode, 0, result.stderr)
-                    self.assertEqual(
-                        self.calls.read_text(),
-                        f"{command} -kb {board} -km themakunga_{keyboard}\n",
-                    )
+                    self.assertEqual(self.calls.read_text().splitlines(), [
+                        f"{command} -kb {board} -km themakunga_{keyboard}_{side}"
+                        for side in sides
+                    ])
                     self.calls.unlink()
 
     def test_invalid_requests_do_not_call_qmk(self):
         for args in [
             ("build",), ("flash",), ("slash",), ("eva01",),
+            ("flash", "eva01"), ("slash", "eva01"),
+            ("flash-left",), ("flash-right", "unknown"),
+            ("flash-left", "eva01", "right"),
             ("flash", "unknown"), ("flash", "%"), ("flash", "eva01", "eva02"),
             ("build", "flash", "eva01"), ("eva01", "flash"),
             ("flash", "help"), ("setup", "eva01"), ("update", "setup"),
@@ -64,9 +71,9 @@ class MakefileTests(unittest.TestCase):
                 self.assertFalse(self.calls.exists())
 
     def test_dry_run_does_not_call_qmk(self):
-        result = self.make("-n", "flash", "eva01")
+        result = self.make("-n", "flash-right", "eva01")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("qmk flash -kb sofle/v2 -km themakunga_eva01", result.stdout)
+        self.assertIn("qmk flash -kb sofle/v2 -km themakunga_eva01_right", result.stdout)
         self.assertFalse(self.calls.exists())
 
     def firmware(self):
@@ -153,6 +160,7 @@ class MakefileTests(unittest.TestCase):
     def test_qmk_failure_is_propagated(self):
         self.env["QMK_EXIT"] = "1"
         self.assertNotEqual(self.make("build", "eva01").returncode, 0)
+        self.assertEqual(len(self.calls.read_text().splitlines()), 1)
 
 
 if __name__ == "__main__":
