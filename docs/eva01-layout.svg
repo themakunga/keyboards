@@ -473,9 +473,9 @@
 <rect x="320" y="908" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="349" y="942.25" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Mac</text>
 </g>
-<g><title>QMK 1, posición 54: KC_TRNS; acción KC_SPC</title>
-<rect x="416" y="908" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="445" y="957.2" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">Espacio</text>
+<g><title>QMK 1, posición 54: KC_ENT; acción KC_ENT</title>
+<rect x="416" y="908" width="58" height="90" rx="7" fill="#292F46" stroke="#7DCFFF" stroke-width="1.5"/>
+<text x="445" y="958.25" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
 <g><title>QMK 1, posición 55: KC_ENT; acción KC_ENT</title>
 <rect x="640" y="908" width="58" height="90" rx="7" fill="#292F46" stroke="#7DCFFF" stroke-width="1.5"/>
@@ -732,10 +732,9 @@
 <rect x="416" y="1378" width="58" height="90" rx="7" fill="#292F46" stroke="#9ECE6A" stroke-width="1.5"/>
 <text x="445" y="1428.25" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
-<g><title>QMK 2, posición 55: KC_TRNS; acción TD(TD_SPC_ENT)</title>
-<rect x="640" y="1378" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="669" y="1418.7" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">Espacio</text>
-<text x="669" y="1435.7" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">/ Enter</text>
+<g><title>QMK 2, posición 55: KC_ENT; acción KC_ENT</title>
+<rect x="640" y="1378" width="58" height="90" rx="7" fill="#292F46" stroke="#9ECE6A" stroke-width="1.5"/>
+<text x="669" y="1428.25" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
 <g><title>QMK 2, posición 56: KC_TRNS; acción MO(2)</title>
 <rect x="736" y="1378" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>

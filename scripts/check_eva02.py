@@ -24,8 +24,8 @@ layers = [[code.strip() for code in body.split(',')] for _, body in blocks]
 assert all(len(layer) == 42 for layer in layers)
 assert layers[0][12] == 'KC_LCTL'
 assert layers[0][36:] == ['KC_LGUI', 'MO(1)', 'TD(TD_SPC_ENT)', 'KC_SPC', 'MO(2)', 'KC_LALT']
-assert layers[1][36:] == ['KC_TRNS', 'KC_TRNS', 'KC_ENT', 'KC_TRNS', 'KC_TRNS', 'KC_TRNS']
-assert layers[2][36:] == ['KC_TRNS', 'KC_TRNS', 'KC_TRNS', 'KC_ENT', 'KC_TRNS', 'KC_TRNS']
+assert layers[1][36:] == ['KC_TRNS', 'KC_TRNS', 'KC_ENT', 'KC_ENT', 'KC_TRNS', 'KC_TRNS']
+assert layers[2][36:] == ['KC_TRNS', 'KC_TRNS', 'KC_ENT', 'KC_ENT', 'KC_TRNS', 'KC_TRNS']
 assert layers[1][1:11] == [f'KC_{n % 10}' for n in range(1, 11)]
 assert layers[1][0] == 'KC_TAB'
 assert {'KC_LEFT', 'KC_DOWN', 'KC_UP', 'KC_RGHT'} <= set(layers[2])
@@ -38,7 +38,7 @@ assert layers[0][12:36] == base[24:42] + base[44:50]
 assert 'ACTION_TAP_DANCE_DOUBLE(KC_SPC, KC_ENT)' in source
 assert 'ko_make_basic(MOD_MASK_SHIFT, TD(TD_SPC_ENT), KC_ENT)' in source
 assert 'return eva_oled_render();' in source
-assert 'eva_oled_record(keycode, record);' in source
+assert 'eva_oled_record(' not in source
 assert (board_path / 'keymaps/themakunga_eva02/keymap.c').is_file()
 config = board_path / 'keymaps/themakunga_eva02/config.h'
 macros = subprocess.run(['cc', '-E', '-dM', '-Werror', '-D', 'RGB_MATRIX_MAXIMUM_BRIGHTNESS=120',

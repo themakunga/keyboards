@@ -337,9 +337,9 @@
 <rect x="464" y="780.8" width="58" height="90" rx="7" fill="#292F46" stroke="#7DCFFF" stroke-width="1.5"/>
 <text x="493" y="831.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
-<g><title>QMK 1, posición 39: KC_TRNS; acción KC_SPC</title>
-<rect x="592" y="780.8" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="621" y="831.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Space</text>
+<g><title>QMK 1, posición 39: KC_ENT; acción KC_ENT</title>
+<rect x="592" y="780.8" width="58" height="90" rx="7" fill="#292F46" stroke="#7DCFFF" stroke-width="1.5"/>
+<text x="621" y="831.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
 <g><title>QMK 1, posición 40: KC_TRNS; acción MO(2)</title>
 <rect x="656" y="812.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
@@ -514,10 +514,9 @@
 <rect x="400" y="1222.8" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="429" y="1257.05" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">L2</text>
 </g>
-<g><title>QMK 2, posición 38: KC_TRNS; acción TD(TD_SPC_ENT)</title>
-<rect x="464" y="1190.8" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="493" y="1231.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">Space</text>
-<text x="493" y="1248.5" font-size="12" fill="#8B93B4" text-anchor="middle" font-weight="normal">/ Enter</text>
+<g><title>QMK 2, posición 38: KC_ENT; acción KC_ENT</title>
+<rect x="464" y="1190.8" width="58" height="90" rx="7" fill="#292F46" stroke="#9ECE6A" stroke-width="1.5"/>
+<text x="493" y="1241.05" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Enter</text>
 </g>
 <g><title>QMK 2, posición 39: KC_ENT; acción KC_ENT</title>
 <rect x="592" y="1190.8" width="58" height="90" rx="7" fill="#292F46" stroke="#9ECE6A" stroke-width="1.5"/>

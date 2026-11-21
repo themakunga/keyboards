@@ -10,7 +10,7 @@ are documented below.
 - USB en la mitad izquierda (`MASTER_LEFT`).
 - Matriz estándar: 58 teclas y dos pulsadores de codificador.
 - Matriz RGB: 72 LED, 36 por mitad, pin D3.
-- OLED: SSD1306, 128 × 32 physical pixels; left landscape, right portrait (32 × 128).
+- OLED: SSD1306, 128 × 32 physical pixels; both halves portrait (32 × 128).
 
 Estos datos proceden de la configuración original. Comprueba las marcas de la placa y el controlador
 antes de grabar el firmware. Este destino no describe Sofle Keyhive, Sofle Choc ni un controlador
@@ -51,8 +51,8 @@ fila de A. En los pulgares izquierdos, **L2** está entre Alt y **Mac**; Mac env
 
 Mantén **L2** (`MO(1)`, capa QMK 1) para símbolos y **L3** (`MO(2)`, capa QMK 2) para funciones,
 multimedia y RGB. Al soltar la tecla vuelves a la capa anterior. El pulgar derecho usa una secuencia
-de toques: uno envía Espacio, dos envían Enter y Shift más esa tecla envía Enter. En L2 esa tecla
-envía Enter directamente; en L3, la tecla de Espacio del pulgar izquierdo envía Enter.
+de toques: uno envía Espacio, dos envían Enter y Shift más esa tecla envía Enter. Both inner Space
+thumb keys send Enter directly on L2 and L3, including when both layers are held.
 
 | Capa                  | Giro izquierdo antihorario / horario | Pulsador izquierdo | Giro derecho antihorario / horario | Pulsador derecho |
 | --------------------- | ------------------------------------ | ------------------ | ---------------------------------- | ---------------- |
@@ -68,31 +68,34 @@ El mapa conserva sus modificadores, teclas de función y controles multimedia y 
 `MOUSEKEY_MOVE_DELTA` es 16; el brillo RGB se limita a 100/255, con valor inicial 64/255 y tono
 violeta 191/255. La configuración guardada en EEPROM puede reemplazar los valores iniciales.
 
-## OLED y animación
+## OLED and animation
 
-The left OLED shows the keyboard name and layer reminders in landscape orientation. The right OLED
-uses 270-degree rotation for a 32 × 128 portrait layout, from top to bottom:
+Both displays use 270-degree rotation and the same synchronized 32 × 128 portrait composition,
+shared by Sofle and Corne through `users/eva/`. The design follows
+[zmk-nice-oled](https://github.com/mctechnology17/zmk-nice-oled):
 
-- Bongo Cat in a 32 × 24 header, adapted from the original artwork.
-- The last three keypresses, newest first, one label per line.
-- A three-plane layer icon: bottom filled for base, middle for L2 (symbols), top for L3
-  (functions/media).
-- Control, Command, Option/Alt and Shift icons in a single vertical column. Active modifiers are
-  inverted; both left and right modifier keys activate the corresponding icon.
+- The Nerd Font layers glyph `` at the top: **1** for base, **2** for L2 and **3** for L3.
+- A 2 × 2 modifier grid: Command `󰘳` and Option/Alt `󰘵` above Control `󰘴` and Shift `󰘶`. Held
+  modifiers invert their 14 × 14 cells; either left or right modifier key activates its icon.
+- A monitor-only animation in the middle, without a cat or glasses. It reacts to keyboard output and
+  returns to idle after 220 ms.
+- Only the last transmitted character or shortcut below the monitor. Shortcut modifiers appear above
+  its key as compact `M` (Command), `A` (Alt), `C` (Control) and `S` (Shift) flags. For example,
+  `MC` above `Q` means Command+Control+Q. Releasing keys or pressing a layer/modifier alone
+  preserves the last output.
 
-Both EVA keymaps use the renderer, animation and font in `users/eva/`. QMK RPC synchronizes the
-state between halves. The animation reacts to keypresses and returns to idle after 220 ms. Recent
-keys are transient display state, not a persistent log.
+![OLED framebuffer previews: base, L2 and L3](../../../../../docs/eva-oled-preview.png)
 
-El código original de Bongo Cat atribuye la autoría a
-[dancarroll/qmk-bongo](https://github.com/dancarroll/qmk-bongo), James Incandenza, pixelbenny y
-obosob. Se conservan los avisos de derechos de autor y ambos archivos de licencia originales. The
-full GPL is in [LICENSE](LICENSE); the inherited `users/eva/bongo/LICENSE` file is empty.
-`users/eva/rules.mk` compiles the shared `users/eva/bongo/bongo_cat.c`; the additional copy in this
-keymap directory is retained from the original repository.
+The display observes final QMK 6-key USB reports, so tap dance, Shift overrides and the Sofle arrow
+remap show the resulting output. US Shift punctuation and Caps Lock are reflected in the displayed
+character. Host text transformations, dead keys and input methods cannot be inferred from USB key
+reports. Mouse, RGB and consumer/media reports do not replace the last keyboard output.
 
-Text uses the included QMK ASCII subset (characters 32–126); modifier icons use separate bitmaps.
-Verify the physical right OLED orientation on the assembled keyboard.
+QMK RPC synchronizes that single transient output, layer, held modifiers and animation between
+halves; no key history is retained. Text uses the included QMK ASCII subset. Nerd Font glyphs are
+pre-rendered bitmaps, so firmware builds do not require a font installation or UTF-8 support. See
+[asset provenance and licenses](../../../../../users/eva/ASSETS.md). Existing source notices and the
+legacy Bongo Cat copy remain preserved. Verify both OLED orientations on the real keyboard.
 
 ## Comprobaciones locales
 
@@ -103,9 +106,9 @@ python3 scripts/check_oled.py
 ```
 
 Python 3 and a C compiler are required. The check verifies key and encoder assignments and compiles
-the actual OLED module with local substitutes. It covers labels, recent-key ordering and clearing,
-all modifier combinations, layer changes, RPC retries, portrait pixel bounds and preservation of the
-complete adapted animation frames.
+the actual OLED module with local substitutes. It covers final USB-report forwarding, characters and
+shortcuts, all modifier combinations, layer changes, RPC retries, portrait pixel bounds and complete
+monitor frames.
 
 These checks do not validate physical pins, encoder direction, OLED orientation, actual brightness
 or final firmware size. Hardware validation requires building and testing the firmware on the board.

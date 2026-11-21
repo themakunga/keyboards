@@ -36,12 +36,14 @@ círculos representan los pulsadores; los giros están detallados en la
 
 - **Base (QMK 0):** QWERTY, Ctrl en la posición de bloqueo de mayúsculas y **Ctrl+S** en la esquina
   inferior izquierda. **Mac** envía Command y está entre **L2** y Espacio.
-- **L2 · Símbolos (QMK 1):** mantener **L2** (`MO(1)`) activa los símbolos. La tecla del pulgar
-  derecho pasa a Enter.
+- **L2 · Symbols (QMK 1):** hold **L2** (`MO(1)`) for symbols. Both inner Space thumb keys send
+  Enter.
 - **L3 · Funciones y multimedia (QMK 2):** mantener **L3** (`MO(2)`) activa F1–F12, controles
   multimedia, navegación y RGB.
 - **Espacio / Enter:** en la base, la tecla del pulgar derecho envía Espacio con un toque y Enter
   con dos; Shift más esa tecla también envía Enter.
+
+On L2 and L3, both inner Space thumb keys send Enter directly, including when both layers are held.
 
 Configura la distribución **US** en el sistema operativo. En L2 y L3, el código convierte todas las
 acciones `KC_DOWN` en Arriba; la imagen muestra ese resultado. En la base, Abajo se conserva.
@@ -57,9 +59,9 @@ The 42-key Corne v2 targets Pro Micro ATmega32U4 and keeps EVA01's letter column
 and three layers. From left to right, its thumb keys are **Command · L2 · Space/Enter** on the left
 and **Space · L3 · Alt** on the right.
 
-The inner left thumb sends Space on one tap and Enter on a double tap; Shift also produces Enter. On
-L2 (QMK 1), that key sends Enter directly. The inner right thumb sends only Space on the base and
-L2, and Enter directly on L3 (QMK 2). Hold **L2** for numbers and symbols or **L3** for F1–F12,
+On the base, the inner left thumb sends Space on one tap and Enter on a double tap; Shift also
+produces Enter. The inner right thumb sends Space. Both keys send Enter directly on L2 and L3,
+including when both layers are held. Hold **L2** for numbers and symbols or **L3** for F1–F12,
 navigation, multimedia and RGB. All four arrows remain on H/J/K/L of L3. See the
 [EVA02 guide](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) for hardware requirements; the
 standard controller profile is not for RP2040.

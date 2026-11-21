@@ -1,46 +1,27 @@
 #include "eva_oled.h"
 #include "transactions.h"
+#include "host.h"
 #include "bongo/bongo_cat.h"
+#include "icons.h"
 #include <string.h>
 
-// Right OLED: portrait 32x128, default QMK 6x8 font.
-// Three recent key labels are transient display state, not a persistent log.
+// Both OLEDs: portrait 32x128, QMK 6x8 text and rasterized Nerd Font icons.
+// Only the last transmitted keyboard action is transient display state.
 typedef struct {
-    uint8_t layer, mods, frame;
-    char keys[3][6];
+    uint8_t layer, mods, frame, last_mods;
+    char key[6];
 } display_state_t;
 static display_state_t state;
 static uint32_t last_press, last_attempt;
 static bool typing;
 static uint8_t stroke;
+static host_driver_t display_driver;
+static void (*forward_keyboard)(report_keyboard_t *);
+static report_keyboard_t previous_report;
 _Static_assert(sizeof(display_state_t) <= 32, "Split RPC payload too large");
 
 static void label(uint16_t keycode, char out[6]) {
     memset(out, 0, 6);
-    // Resolve common shifted US aliases before decoding their base keycodes.
-    switch (keycode) {
-        case KC_EXLM: strcpy(out, "!"); return;
-        case KC_AT: strcpy(out, "@"); return;
-        case KC_HASH: strcpy(out, "#"); return;
-        case KC_DLR: strcpy(out, "$"); return;
-        case KC_PERC: strcpy(out, "%"); return;
-        case KC_CIRC: strcpy(out, "^"); return;
-        case KC_AMPR: strcpy(out, "&"); return;
-        case KC_ASTR: strcpy(out, "*"); return;
-        case KC_LPRN: strcpy(out, "("); return;
-        case KC_RPRN: strcpy(out, ")"); return;
-        case KC_TILD: strcpy(out, "~"); return;
-        case KC_LCBR: strcpy(out, "{"); return;
-        case KC_RCBR: strcpy(out, "}"); return;
-        case KC_UNDS: strcpy(out, "_"); return;
-        case KC_PLUS: strcpy(out, "+"); return;
-        case KC_PIPE: strcpy(out, "|"); return;
-        case KC_COLN: strcpy(out, ":"); return;
-        case KC_DQUO: strcpy(out, "\""); return;
-        case KC_LABK: strcpy(out, "<"); return;
-        case KC_RABK: strcpy(out, ">"); return;
-        case KC_QUES: strcpy(out, "?"); return;
-    }
     if (keycode >= KC_A && keycode <= KC_Z) {
         out[0] = 'A' + keycode - KC_A;
         return;
@@ -71,10 +52,6 @@ static void label(uint16_t keycode, char out[6]) {
         case KC_RGHT: strcpy(out, "Right"); break;
         case KC_UP: strcpy(out, "Up"); break;
         case KC_DOWN: strcpy(out, "Down"); break;
-        case KC_LCTL: case KC_RCTL: strcpy(out, "Ctrl"); break;
-        case KC_LSFT: case KC_RSFT: strcpy(out, "Shift"); break;
-        case KC_LALT: case KC_RALT: strcpy(out, "Opt"); break;
-        case KC_LGUI: case KC_RGUI: strcpy(out, "Super"); break;
         case KC_MINS: strcpy(out, "-"); break;
         case KC_EQL: strcpy(out, "="); break;
         case KC_LBRC: strcpy(out, "["); break;
@@ -86,28 +63,6 @@ static void label(uint16_t keycode, char out[6]) {
         case KC_COMM: strcpy(out, ","); break;
         case KC_DOT: strcpy(out, "."); break;
         case KC_SLSH: strcpy(out, "/"); break;
-        case KC_MPRV: strcpy(out, "Prev"); break;
-        case KC_MPLY: strcpy(out, "Play"); break;
-        case KC_MNXT: strcpy(out, "Next"); break;
-        case KC_MSTP: strcpy(out, "Stop"); break;
-        case KC_MUTE: strcpy(out, "Mute"); break;
-        case KC_VOLD: strcpy(out, "Vol-"); break;
-        case KC_VOLU: strcpy(out, "Vol+"); break;
-        case MS_LEFT: strcpy(out, "MsL"); break;
-        case MS_RGHT: strcpy(out, "MsR"); break;
-        case MS_UP: strcpy(out, "MsUp"); break;
-        case MS_DOWN: strcpy(out, "MsDn"); break;
-        case MS_BTN1: strcpy(out, "Click"); break;
-        case MS_BTN2: strcpy(out, "RClk"); break;
-        case RM_TOGG: strcpy(out, "LED"); break;
-        case RM_PREV: strcpy(out, "FX-"); break;
-        case RM_NEXT: strcpy(out, "FX+"); break;
-        case RM_VALD: strcpy(out, "Bri-"); break;
-        case RM_VALU: strcpy(out, "Bri+"); break;
-        case RM_HUED: strcpy(out, "Hue-"); break;
-        case RM_HUEU: strcpy(out, "Hue+"); break;
-        case MO(1): strcpy(out, "L2"); break;
-        case MO(2): strcpy(out, "L3"); break;
         default: {
             // Custom keycodes still have an unambiguous visible identity.
             const char hex[] = "0123456789ABCDEF";
@@ -122,20 +77,46 @@ static void receive_state(uint8_t size, const void *data, uint8_t out_size, void
     (void)out;
     if (size != sizeof(state)) return;
     memcpy(&state, data, sizeof(state));
-    for (uint8_t i = 0; i < 3; ++i) state.keys[i][5] = '\0';
+    state.key[5] = '\0';
 }
 
 void eva_oled_init(void) {
     transaction_register_rpc(EVA_OLED_SYNC, receive_state);
 }
 
-void eva_oled_record(uint16_t keycode, keyrecord_t *record) {
-    if (!is_keyboard_master() || !record->event.pressed) return;
-    memmove(state.keys[1], state.keys[0], 2 * sizeof(state.keys[0]));
-    label(keycode, state.keys[0]);
-    last_press = timer_read32();
-    typing = true;
-    stroke ^= 1;
+// Observe final reports so tap dance, remaps and overrides show their actual output.
+static void send_keyboard(report_keyboard_t *report) {
+    forward_keyboard(report);
+    for (uint8_t i = 0; i < KEYBOARD_REPORT_KEYS; ++i) {
+        uint8_t keycode = report->keys[i];
+        if (keycode < KC_A || keycode >= KC_LCTL || memchr(previous_report.keys, keycode, KEYBOARD_REPORT_KEYS)) continue;
+        label(keycode, state.key);
+        bool shifted = report->mods & MOD_MASK_SHIFT;
+        bool shortcut = report->mods & (MOD_MASK_GUI | MOD_MASK_ALT | MOD_MASK_CTRL);
+        state.last_mods = shortcut ? report->mods : 0;
+        if (keycode >= KC_A && keycode <= KC_Z) {
+            if (!shortcut && !(shifted ^ host_keyboard_led_state().caps_lock)) state.key[0] += 'a' - 'A';
+        } else {
+            const char plain[] = "1234567890-=[]\\;'/.,`";
+            const char upper[] = "!@#$%^&*()_+{}|:\"?><~";
+            const char *match = strchr(plain, state.key[0]);
+            if (shifted && state.key[1] == '\0' && match) state.key[0] = upper[match - plain];
+        }
+        last_press = timer_read32();
+        typing = true;
+        stroke ^= 1;
+    }
+    previous_report = *report;
+}
+
+void matrix_scan_user(void) {
+    if (!is_keyboard_master() || forward_keyboard) return;
+    host_driver_t *driver = host_get_driver();
+    if (!driver || !driver->send_keyboard) return;
+    display_driver = *driver;
+    forward_keyboard = driver->send_keyboard;
+    display_driver.send_keyboard = send_keyboard;
+    host_set_driver(&display_driver);
 }
 
 void eva_oled_housekeeping(void) {
@@ -156,37 +137,37 @@ void eva_oled_housekeeping(void) {
 
 static void text_at(uint8_t row, const char *text, bool inverted) {
     oled_set_cursor(0, row);
+    uint8_t padding = (5 - strlen(text)) / 2;
+    for (uint8_t i = 0; i < padding; ++i) oled_write(" ", inverted);
     oled_write(text, inverted);
-    for (uint8_t i = strlen(text); i < 5; ++i) oled_write(" ", inverted);
+    for (uint8_t i = padding + strlen(text); i < 5; ++i) oled_write(" ", inverted);
 }
 
-// Control, Command, Option/Alt and Shift, one 12x12 icon per row.
-static const uint16_t PROGMEM modifier_icons[4][12] = {
-    {0x000, 0x000, 0x000, 0x060, 0x0F0, 0x198, 0x30C, 0x606, 0x000, 0x000, 0x000, 0x000},
-    {0x000, 0x306, 0x489, 0x489, 0x7FE, 0x108, 0x108, 0x7FE, 0x489, 0x489, 0x306, 0x000},
-    {0x000, 0x000, 0xE1F, 0x300, 0x180, 0x0C0, 0x060, 0x030, 0x018, 0x00F, 0x000, 0x000},
-    {0x000, 0x060, 0x090, 0x108, 0x204, 0x402, 0x70E, 0x108, 0x108, 0x108, 0x1F8, 0x000},
-};
-
-static void icon_at(uint8_t top, const uint16_t icon[12], bool inverted) {
-    for (uint8_t y = 0; y < 12; ++y) {
+static void icon_at(uint8_t left, uint8_t top, const uint16_t icon[EVA_ICON_SIZE], bool inverted) {
+    for (uint8_t y = 0; y < EVA_ICON_SIZE; ++y) {
         uint16_t row = pgm_read_word(&icon[y]);
-        for (uint8_t x = 0; x < 12; ++x)
-            oled_write_pixel(10 + x, top + y, !!(row & (1 << (11 - x))) ^ inverted);
+        for (uint8_t x = 0; x < EVA_ICON_SIZE; ++x)
+            oled_write_pixel(left + x, top + y, !!(row & (1 << (EVA_ICON_SIZE - 1 - x))) ^ inverted);
     }
 }
 
 bool eva_oled_render(void) {
-    if (is_keyboard_left()) return false;
+    icon_at(4, 4, eva_icons[EVA_LAYERS], false);
+    // User-facing layers are 1..3; the number keeps the same glyph unambiguous.
+    static const uint8_t PROGMEM numbers[3][5] = {{2, 6, 2, 2, 7}, {6, 1, 2, 4, 7}, {6, 1, 2, 1, 6}};
+    uint8_t layer = state.layer > 2 ? 2 : state.layer;
+    for (uint8_t y = 0; y < 5; ++y)
+        for (uint8_t x = 0; x < 3; ++x)
+            oled_write_pixel(24 + x, 8 + y, pgm_read_byte(&numbers[layer][y]) & (1 << (2 - x)));
+    const uint8_t masks[] = {MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_CTRL, MOD_MASK_SHIFT};
+    for (uint8_t i = 0; i < 4; ++i)
+        icon_at(1 + 16 * (i % 2), 24 + 16 * (i / 2), eva_icons[i], state.mods & masks[i]);
     render_bongo_cat(state.frame);
-    for (uint8_t i = 0; i < 3; ++i) text_at(4 + i, state.keys[i], false);
-    // Three stacked planes: base at the bottom, L2 in the middle, L3 at the top.
-    for (uint8_t plane = 0; plane < 3; ++plane)
-        for (uint8_t y = 0; y < 3; ++y)
-            for (uint8_t x = 0; x < 12; ++x)
-                oled_write_pixel(10 + x, 61 + 4 * plane + y,
-                                 y != 1 || x == 0 || x == 11 || state.layer == 2 - plane);
-    const uint8_t masks[] = {MOD_MASK_CTRL, MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_SHIFT};
-    for (uint8_t i = 0; i < 4; ++i) icon_at(76 + 13 * i, modifier_icons[i], state.mods & masks[i]);
+    char chord[5] = {0};
+    uint8_t length = 0;
+    for (uint8_t i = 0; i < 4; ++i)
+        if (state.last_mods & masks[i]) chord[length++] = "MACS"[i];
+    text_at(12, chord, false);
+    text_at(13, state.key, false);
     return false;
 }

@@ -23,14 +23,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TILD, KC_LBRC, KC_RBRC, KC_MINS, KC_EQL,  KC_PIPE,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_LCBR, KC_RCBR, KC_UNDS, KC_PLUS, KC_COLN, KC_DQUO,
         KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_MUTE, KC_HOME, KC_TRNS, KC_TRNS, KC_LABK, KC_RABK, KC_QUES, KC_TRNS,
-        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_ENT,  KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_ENT,  KC_ENT,  KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS
     ),
     [2] = LAYOUT(
         KC_F11,  KC_F1,   KC_F2,   KC_F3,   KC_F4,   KC_F5,   KC_F6,   KC_F7,   KC_F8,   KC_F9,   KC_F10,  KC_F12,
         KC_TRNS, KC_MPRV, KC_MPLY, KC_MNXT, KC_MUTE, KC_MSTP, KC_HOME, KC_PGDN, KC_PGUP, KC_END,  KC_DEL,  KC_TRNS,
         KC_TRNS, KC_VOLD, KC_VOLU, RM_VALD, RM_VALU, RM_TOGG, KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT, KC_TRNS, KC_TRNS,
         KC_TRNS, RM_PREV, RM_NEXT, RM_HUED, RM_HUEU, KC_TRNS, KC_MUTE, G(C(KC_Q)), KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS,
-        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_ENT,  KC_TRNS, KC_TRNS, KC_TRNS, KC_UP,   KC_TRNS
+        KC_TRNS, KC_TRNS, KC_TRNS, KC_TRNS, KC_ENT,  KC_ENT,  KC_TRNS, KC_TRNS, KC_UP,   KC_TRNS
     ),
 };
 
@@ -46,7 +46,6 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][NUM_DIRECTIONS] = {
 void keyboard_post_init_user(void) { eva_oled_init(); }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    eva_oled_record(keycode, record);
     // En L1 y L2, ↓ → ↑ (no interfiere con nvim en base)
     if (keycode == KC_DOWN && (IS_LAYER_ON(1) || IS_LAYER_ON(2))) {
         if (record->event.pressed) register_code(KC_UP);
@@ -59,15 +58,6 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 void housekeeping_task_user(void) { eva_oled_housekeeping(); }
 oled_rotation_t oled_init_user(oled_rotation_t rotation) {
     (void)rotation;
-    return is_keyboard_left() ? OLED_ROTATION_0 : OLED_ROTATION_270;
+    return OLED_ROTATION_270;
 }
-bool oled_task_user(void) {
-    if (is_keyboard_left()) {
-        oled_set_cursor(0, 0);
-        oled_write_ln_P(PSTR("SOFLE / EVA-01"), false);
-        oled_write_ln_P(PSTR("L2: symbols"), false);
-        oled_write_ln_P(PSTR("L3: media + RGB"), false);
-        return false;
-    }
-    return eva_oled_render();
-}
+bool oled_task_user(void) { return eva_oled_render(); }

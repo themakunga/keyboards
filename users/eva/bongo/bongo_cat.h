@@ -17,6 +17,6 @@
 #pragma once
 #include <stdint.h>
 
-// Renders a 32x24 Bongo Cat header on a portrait QMK OLED.
+// Renders the central 32x24 monitor-only animation on a portrait QMK OLED.
 // 0: idle, 1/2: alternating paws, 3: ready.
 void render_bongo_cat(uint8_t frame);
