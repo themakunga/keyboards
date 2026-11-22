@@ -216,3 +216,16 @@ after all uploads finish. Download the matching keyboard image from
 Las promociones simultáneas se ejecutan en serie. Repetir una ejecución para una revisión ya
 etiquetada reutiliza su versión: permite completar un borrador pendiente y conserva intacta una
 versión publicada. El flujo no publica cambios en `main` ni graba firmware en el teclado.
+
+## Repository reference
+
+| Path                       | Purpose                                  |
+| -------------------------- | ---------------------------------------- |
+| [`keyboards/`](keyboards/) | QMK keyboard definitions and keymaps     |
+| [`users/`](users/)         | Shared user or application configuration |
+| [`qmk.json`](qmk.json)     | QMK userspace build targets              |
+| [`Makefile`](Makefile)     | Documented build and validation targets  |
+| [`docs/`](docs/)           | Usage and development guides             |
+
+The default branch is `main`. Use the tracked manifests and scripts above when preparing changes;
+keep local credentials and generated files out of commits.
