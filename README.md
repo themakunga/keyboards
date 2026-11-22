@@ -1,5 +1,7 @@
 # Keyboards
 
+![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=white)
+
 [![Checks](https://github.com/themakunga/keyboards/actions/workflows/checks.yaml/badge.svg)](https://github.com/themakunga/keyboards/actions/workflows/checks.yaml)
 [![Firmware](https://github.com/themakunga/keyboards/actions/workflows/firmware.yaml/badge.svg)](https://github.com/themakunga/keyboards/actions/workflows/firmware.yaml)
 [![Release](https://img.shields.io/github/v/release/themakunga/keyboards)](https://github.com/themakunga/keyboards/releases)
