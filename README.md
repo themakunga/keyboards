@@ -15,18 +15,18 @@ un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
 
 ## Teclados registrados
 
-| Keyboard  | Version | QMK target | Keymap                          | Documentation                                                                      |
-| --------- | ------- | ---------- | ------------------------------- | ---------------------------------------------------------------------------------- |
-| Sofle RGB | v2      | `sofle/v2` | `themakunga_eva01_{left,right}` | [Hardware, layout and OLED](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md) |
-| Corne     | v2      | `corne/v2` | `themakunga_eva02_{left,right}` | [Hardware, layout and OLED](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) |
+| Keyboard  | Version | QMK target | Keymap             | Documentation                                                                      |
+| --------- | ------- | ---------- | ------------------ | ---------------------------------------------------------------------------------- |
+| Sofle RGB | v2      | `sofle/v2` | `themakunga_eva01` | [Hardware, layout and OLED](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md) |
+| Corne     | v2      | `corne/v2` | `themakunga_eva02` | [Hardware, layout and OLED](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) |
 
-`users/eva/` contains the shared OLED code and font. Each keyboard builds separate `_left` and
-`_right` firmware: the left OLED shows layers, modifiers and the last keyboard output; the right
-shows
-[Luna, the keyboard pet](https://github.com/HellSingCoder/qmk_firmware/tree/33d7fa1180d232dcdb024c68a8f4629dced32afb/keyboards/sofle/keymaps/helltm).
-Luna sits, walks or runs with typing speed, sneaks with Control, barks with Caps Lock and jumps on
-Space. USB stays on the left during normal use. Each image contains only its side's OLED content,
-and fixed master/peripheral roles let LTO remove unused paths.
+`users/eva/` contains the shared OLED code and font. Each keyboard builds one firmware image for
+both halves. Both portrait displays show the current layer, Luna, a centered 2 × 2 bordered
+Command/Option/Control/Shift grid, then the last two transmitted keyboard outputs. Held modifiers
+invert their icons; shortcut flags remain attached to each output. Luna uses the original
+[HellSingCoder sprites](https://github.com/HellSingCoder/qmk_firmware/tree/33d7fa1180d232dcdb024c68a8f4629dced32afb/keyboards/sofle/keymaps/helltm).
+The complete display state is synchronized over the split link. USB stays on the left during normal
+use. Flash both halves with the same new image; the previous side-specific pair is incompatible.
 
 Hardware definitions are grouped by keyboard family and version; personal keymaps live beneath
 `keymaps/`:
@@ -136,17 +136,15 @@ families and Sofle callbacks. Repeated runs are safe; conflicting files or links
 Source changes are visible immediately through the links. This command does not fetch newer QMK
 revisions or update firmware on a connected keyboard.
 
-The four side-specific targets work with standard QMK commands and userspace builds:
+The two shared targets work with standard QMK commands and userspace builds:
 
 ```sh
-qmk compile -kb sofle/v2 -km themakunga_eva01_left
-qmk compile -kb sofle/v2 -km themakunga_eva01_right
-qmk compile -kb corne/v2 -km themakunga_eva02_left
-qmk compile -kb corne/v2 -km themakunga_eva02_right
+qmk compile -kb sofle/v2 -km themakunga_eva01
+qmk compile -kb corne/v2 -km themakunga_eva02
 qmk userspace-compile
 ```
 
-`qmk.json` registers all four targets. CI uses the same link-update target and the standard QMK
+`qmk.json` registers both keyboard targets. CI uses the same link-update target and the standard QMK
 userspace workflow, producing the `Firmware` artifact consumed by releases.
 
 ## Build and flash with Make
@@ -161,26 +159,24 @@ make help
 make setup
 make update
 make build eva01
-make flash-left eva01
-make flash-right eva01
+make flash eva01
 make build eva02
-make flash-left eva02
-make flash-right eva02
+make flash eva02
 ```
 
-`make` without arguments shows help. `make build eva01` compiles **both halves** of Sofle;
-`make build eva02` does the same for Corne. Output names end in `_left.hex` and `_right.hex`, for
-example `sofle_v2_themakunga_eva01_left.hex` and `sofle_v2_themakunga_eva01_right.hex`. `flash-left`
-and `flash-right` each compile and flash **only the selected side**. The old ambiguous
-`flash`/`slash` commands are no longer accepted. Choose exactly one keyboard per command; invalid
-arguments fail before QMK runs. A failed left build stops before attempting the right build.
+`make` without arguments shows help. `make build eva01` compiles one Sofle image,
+`sofle_v2_themakunga_eva01.hex`; `make build eva02` compiles one Corne image,
+`corne_v2_themakunga_eva02.hex`. Use the same image for both physical halves. `make flash eva01` or
+`make flash eva02` compiles the matching shared target and flashes only the connected half. Run the
+same command again with the other half connected. Choose exactly one keyboard per command; invalid
+arguments fail before QMK runs. The old `flash-left`/`flash-right` commands are removed.
 
 For flashing, disconnect power before changing the split cable. Connect only the intended half over
-USB, run its matching flash command and follow QMK's bootloader/reset prompt. Repeat for the other
-half using its own command, then reconnect the split cable with power disconnected and return USB to
-the left half for normal use. Side-specific firmware cannot be interchanged. The profiles target Pro
-Micro ATmega32U4 with Caterina, not RP2040. Preview without hardware using
-`make -n flash-right eva01`. See the [QMK flashing guide](https://docs.qmk.fm/newbs_flashing).
+USB, run its flash command and follow QMK's bootloader/reset prompt. Repeat for the other half, then
+reconnect the split cable with power disconnected and return USB to the left for normal use. Update
+both halves together; do not mix these images with the old side-specific firmware. The profiles
+target Pro Micro ATmega32U4 with Caterina, not RP2040. Preview without hardware using
+`make -n flash eva01`. See the [QMK flashing guide](https://docs.qmk.fm/newbs_flashing).
 
 The command tests simulate QMK and never access hardware:
 
@@ -193,10 +189,9 @@ python3 -m unittest discover -s tests -p test_makefile.py
 Place its hardware definition in `keyboards/<family>/<version>/` and its keymap in
 `keymaps/themakunga_<name>/` beneath that directory. Retain upstream copyright notices and licenses.
 Add the hardware revision to `scripts/link-keyboards.sh`, then add the shortcut name to `KEYBOARDS`
-and its `BOARD_<name>` mapping in the Makefile. The shortcut selects `themakunga_<name>_left` and
-`themakunga_<name>_right`; keep shared key assignments in `themakunga_<name>` and use thin
-side-specific wrappers. Register the hardware/keymap pair in `qmk.json`, and update the command
-tests and documentation. The firmware workflow discovers registered targets automatically.
+and its `BOARD_<name>` mapping in the Makefile. The shortcut selects `themakunga_<name>` for both
+halves. Register the hardware/keymap pair in `qmk.json`, and update the command tests and
+documentation. The firmware workflow discovers registered targets automatically.
 
 Generated firmware, temporary build output and local credentials are ignored by Git.
 
@@ -212,10 +207,10 @@ promociones manuales, otros commits nuevos también incrementan el parche. Se in
 integración, por lo que cuentan los Conventional Commits de las ramas integradas. En un repositorio
 sin etiquetas, un primer `feat` produce `v0.1.0`.
 
-The workflow compiles all four side-specific targets, downloads the firmware and atomically creates
+The workflow compiles both shared keyboard targets, downloads the firmware and atomically creates
 `release/vMAJOR.MINOR.PATCH` and tag `vMAJOR.MINOR.PATCH` at the selected revision. It creates a
 GitHub draft release, attaches the generated `.hex`, `.bin` and `.uf2` files and publishes only
-after all uploads finish. Download each matching side from
+after all uploads finish. Download the matching keyboard image from
 **[Releases](https://github.com/themakunga/keyboards/releases)**.
 
 Las promociones simultáneas se ejecutan en serie. Repetir una ejecución para una revisión ya

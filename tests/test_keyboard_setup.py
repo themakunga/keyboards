@@ -13,9 +13,8 @@ class KeyboardSetupTests(unittest.TestCase):
     def test_targets_follow_family_version_and_keymap(self):
         userspace = json.loads((ROOT / "qmk.json").read_text())
         targets = userspace["build_targets"]
-        self.assertEqual(targets, [[board, f"themakunga_{name}_{side}"]
-                                   for board, name in [("sofle/v2", "eva01"), ("corne/v2", "eva02")]
-                                   for side in ("left", "right")])
+        self.assertEqual(targets, [[board, f"themakunga_{name}"]
+                                   for board, name in [("sofle/v2", "eva01"), ("corne/v2", "eva02")]])
         for keyboard, keymap in targets:
             self.assertTrue((ROOT / "keyboards" / keyboard / "keyboard.json").is_file())
             self.assertTrue((ROOT / "keyboards" / keyboard / "keymaps" / keymap / "keymap.c").is_file())
