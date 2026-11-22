@@ -2,42 +2,17 @@
 #include "transactions.h"
 #include "host.h"
 #include "luna.h"
+#include "icons.h"
 #include <string.h>
 
-// Fixed USB-left roles let LTO discard unused master/peripheral paths.
-#ifdef EVA_RIGHT
-bool is_keyboard_master(void) { return false; }
-bool is_keyboard_left(void) { return false; }
-#else
-bool is_keyboard_master(void) { return true; }
-bool is_keyboard_left(void) { return true; }
-#endif
-
-static eva_pet_state_t pet;
-_Static_assert(sizeof(pet) <= 32, "Split RPC payload too large");
-
-#ifdef EVA_RIGHT
-static void receive_state(uint8_t size, const void *data, uint8_t out_size, void *out) {
-    (void)out_size;
-    (void)out;
-    if (size == sizeof(pet)) memcpy(&pet, data, sizeof(pet));
-}
-
-void eva_oled_init(void) { transaction_register_rpc(EVA_OLED_SYNC, receive_state); }
-void eva_oled_housekeeping(void) {}
-bool eva_oled_render(void) {
-    render_luna(&pet);
-    return false;
-}
-#else
-#include "icons.h"
-
-// Only the last transmitted keyboard action is transient display state.
+// Final USB keyboard actions are transient display state, shared by both halves.
 typedef struct {
-    uint8_t layer, mods, last_mods;
-    char key[6];
+    eva_pet_state_t pet;
+    uint8_t layer, last_mods[2];
+    char key[2][6];
 } display_state_t;
 static display_state_t state;
+_Static_assert(sizeof(state) <= 32, "Split RPC payload too large");
 static uint32_t last_attempt;
 static host_driver_t display_driver;
 static void (*forward_keyboard)(report_keyboard_t *);
@@ -95,34 +70,45 @@ static void label(uint16_t keycode, char out[6]) {
     }
 }
 
-void eva_oled_init(void) {}
+static void receive_state(uint8_t size, const void *data, uint8_t out_size, void *out) {
+    (void)out_size;
+    (void)out;
+    if (!is_keyboard_master() && size == sizeof(state)) {
+        const display_state_t *incoming = data;
+        if (!incoming->key[0][5] && !incoming->key[1][5]) memcpy(&state, data, sizeof(state));
+    }
+}
+
+void eva_oled_init(void) { transaction_register_rpc(EVA_OLED_SYNC, receive_state); }
 
 // Observe final reports so tap dance, remaps and overrides show their actual output.
 static void send_keyboard(report_keyboard_t *report) {
     forward_keyboard(report);
-    pet.space = memchr(report->keys, KC_SPC, KEYBOARD_REPORT_KEYS) != NULL;
+    state.pet.space = memchr(report->keys, KC_SPC, KEYBOARD_REPORT_KEYS) != NULL;
     for (uint8_t i = 0; i < KEYBOARD_REPORT_KEYS; ++i) {
         uint8_t keycode = report->keys[i];
         if (keycode < KC_A || keycode >= KC_LCTL || memchr(previous_report.keys, keycode, KEYBOARD_REPORT_KEYS)) continue;
-        label(keycode, state.key);
+        memcpy(state.key[0], state.key[1], sizeof(state.key[0]));
+        state.last_mods[0] = state.last_mods[1];
+        label(keycode, state.key[1]);
         bool shifted = report->mods & MOD_MASK_SHIFT;
         bool shortcut = report->mods & (MOD_MASK_GUI | MOD_MASK_ALT | MOD_MASK_CTRL);
-        state.last_mods = shortcut ? report->mods : 0;
+        state.last_mods[1] = shortcut ? report->mods : 0;
         if (keycode >= KC_A && keycode <= KC_Z) {
-            if (!shortcut && !(shifted ^ host_keyboard_led_state().caps_lock)) state.key[0] += 'a' - 'A';
+            if (!shortcut && !(shifted ^ host_keyboard_led_state().caps_lock)) state.key[1][0] += 'a' - 'A';
         } else {
             const char plain[] = "1234567890-=[]\\;'/.,`";
             const char upper[] = "!@#$%^&*()_+{}|:\"?><~";
-            const char *match = strchr(plain, state.key[0]);
-            if (shifted && state.key[1] == '\0' && match) state.key[0] = upper[match - plain];
+            const char *match = strchr(plain, state.key[1][0]);
+            if (shifted && state.key[1][1] == '\0' && match) state.key[1][0] = upper[match - plain];
         }
-        if (keycode == KC_SPC) ++pet.jumps;
+        if (keycode == KC_SPC) ++state.pet.jumps;
     }
     previous_report = *report;
 }
 
 void matrix_scan_user(void) {
-    if (forward_keyboard) return;
+    if (!is_keyboard_master() || forward_keyboard) return;
     host_driver_t *driver = host_get_driver();
     if (!driver || !driver->send_keyboard) return;
     display_driver = *driver;
@@ -132,28 +118,34 @@ void matrix_scan_user(void) {
 }
 
 void eva_oled_housekeeping(void) {
+    if (!is_keyboard_master()) return;
     state.layer = get_highest_layer(layer_state | default_layer_state);
-    state.mods = get_mods() | get_weak_mods();
+    state.pet.mods = get_mods() | get_weak_mods();
 #ifndef NO_ACTION_ONESHOT
-    state.mods |= get_oneshot_mods();
+    state.pet.mods |= get_oneshot_mods();
 #endif
-    pet.wpm = get_current_wpm();
-    pet.mods = state.mods;
-    pet.caps = host_keyboard_led_state().caps_lock;
-    pet.awake = last_input_activity_elapsed() < OLED_TIMEOUT || last_led_activity_elapsed() < OLED_TIMEOUT;
+    state.pet.wpm = get_current_wpm();
+    state.pet.caps = host_keyboard_led_state().caps_lock;
+    state.pet.awake = last_input_activity_elapsed() < OLED_TIMEOUT || last_led_activity_elapsed() < OLED_TIMEOUT;
     // Throttle failures too, so a disconnected half cannot stall every scan.
     if (timer_elapsed32(last_attempt) >= 50) {
         last_attempt = timer_read32();
-        transaction_rpc_send(EVA_OLED_SYNC, sizeof(pet), &pet);
+        transaction_rpc_send(EVA_OLED_SYNC, sizeof(state), &state);
     }
 }
 
-static void text_at(uint8_t row, const char *text, bool inverted) {
-    oled_set_cursor(0, row);
-    uint8_t padding = (5 - strlen(text)) / 2;
-    for (uint8_t i = 0; i < padding; ++i) oled_write(" ", inverted);
-    oled_write(text, inverted);
-    for (uint8_t i = padding + strlen(text); i < 5; ++i) oled_write(" ", inverted);
+// Reuse the OLED driver's font so pixel-centered labels need no duplicate bitmap.
+extern const unsigned char font[] PROGMEM;
+static void text_at(uint8_t row, const char *text) {
+    uint8_t width = 6 * strlen(text), left = (32 - width) / 2;
+    for (uint8_t x = 0; x < 32; ++x) {
+        uint8_t column = 0;
+        if (x >= left && x < left + width) {
+            uint8_t offset = x - left;
+            column = pgm_read_byte(&font[(text[offset / 6] - 32) * 6 + offset % 6]);
+        }
+        oled_write_raw_byte(column, row * 32 + x);
+    }
 }
 
 static void icon_at(uint8_t left, uint8_t top, const uint16_t icon[EVA_ICON_SIZE], bool inverted) {
@@ -165,6 +157,11 @@ static void icon_at(uint8_t left, uint8_t top, const uint16_t icon[EVA_ICON_SIZE
 }
 
 bool eva_oled_render(void) {
+    if (!state.pet.awake) {
+        oled_off();
+        return false;
+    }
+    render_luna(&state.pet);
     icon_at(4, 4, eva_icons[EVA_LAYERS], false);
     // User-facing layers are 1..3; the number keeps the same glyph unambiguous.
     static const uint8_t PROGMEM numbers[3][5] = {{2, 6, 2, 2, 7}, {6, 1, 2, 4, 7}, {6, 1, 2, 1, 6}};
@@ -173,15 +170,29 @@ bool eva_oled_render(void) {
         for (uint8_t x = 0; x < 3; ++x)
             oled_write_pixel(24 + x, 8 + y, pgm_read_byte(&numbers[layer][y]) & (1 << (2 - x)));
     const uint8_t masks[] = {MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_CTRL, MOD_MASK_SHIFT};
-    for (uint8_t i = 0; i < 4; ++i)
-        icon_at(1 + 16 * (i % 2), 24 + 16 * (i / 2), eva_icons[i], state.mods & masks[i]);
-    char chord[5] = {0};
-    uint8_t length = 0;
-    for (uint8_t i = 0; i < 4; ++i)
-        if (state.last_mods & masks[i]) chord[length++] = "MACS"[i];
-    text_at(8, chord, false);
-    text_at(9, state.key, false);
+    for (uint8_t i = 0; i < 4; ++i) {
+        uint8_t left = 18 * (i % 2), top = 60 + 20 * (i / 2);
+        for (uint8_t y = 0; y < EVA_ICON_SIZE; ++y) {
+            bool glyph_row = y >= 3 && y < 11;
+            uint16_t row = glyph_row ? pgm_read_word(&eva_icons[i][1 + ((y - 3) * 12 + 6) / 8]) : 0;
+            uint8_t inset = y == 0 || y == 13 ? 2 : y == 1 || y == 12 ? 1 : 0;
+            for (uint8_t x = 0; x < EVA_ICON_SIZE; ++x) {
+                bool glyph = glyph_row && x >= 3 && x < 11 &&
+                             (row & (1 << (12 - ((x - 3) * 12 + 6) / 8)));
+                bool on = glyph ^ !!(state.pet.mods & masks[i]);
+                if (x < inset || x >= EVA_ICON_SIZE - inset) on = false;
+                else if (y == 0 || y == 13 || x == inset || x == 13 - inset) on = true;
+                oled_write_pixel(left + x, top + y, on);
+            }
+        }
+    }
+    for (uint8_t key = 0; key < 2; ++key) {
+        char chord[5] = {0};
+        uint8_t length = 0;
+        for (uint8_t i = 0; i < 4; ++i)
+            if (state.last_mods[key] & masks[i]) chord[length++] = "MACS"[i];
+        text_at(12 + 2 * key, chord);
+        text_at(13 + 2 * key, state.key[key]);
+    }
     return false;
 }
-
-#endif

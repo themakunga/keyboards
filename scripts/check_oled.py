@@ -65,7 +65,7 @@ for family, name in [('sofle', 'eva01'), ('corne', 'eva02')]:
         assert callback in code
     assert 'USER_NAME := eva' in (keymap_path / 'rules.mk').read_text()
 assert 'SRC += eva_oled.c' in (root / 'rules.mk').read_text()
-assert 'SRC += luna.c' in (root / 'rules.mk').read_text()
+assert 'luna.c' in (root / 'rules.mk').read_text()
 luna_bytes = bytes(int(value, 16) for value in re.findall(r'0x([0-9a-f]+)', (root / 'luna.c').read_text()))
 assert len(luna_bytes) == 960
 assert hashlib.sha256(luna_bytes).hexdigest() == '42225ff829e5023d6fdcdc9d1ca82e4b06031510097ba23df79e2efc8965e543'
@@ -114,8 +114,13 @@ static led_t leds;
 host_driver_t *host_get_driver(void) { return installed_driver; }
 void host_set_driver(host_driver_t *driver) { installed_driver = driver; }
 led_t host_keyboard_led_state(void) { return leds; }
-bool is_keyboard_master(void);
-bool is_keyboard_left(void);
+#ifdef EVA_RIGHT
+static bool master = false;
+#else
+static bool master = true;
+#endif
+bool is_keyboard_master(void) { return master; }
+bool is_keyboard_left(void) { return master; }
 uint8_t get_current_wpm(void) { return wpm; }
 uint32_t last_input_activity_elapsed(void) { return activity; }
 uint32_t last_led_activity_elapsed(void) { return activity; }
@@ -131,23 +136,23 @@ uint8_t get_highest_layer(uint32_t value) {
     return result;
 }
 void oled_set_cursor(uint8_t x, uint8_t y);
-void oled_write(const char *text, bool inverted);
 void oled_write_pixel(uint8_t x, uint8_t y, bool on);
 void oled_write_raw_P(const char *data, uint16_t size);
+void oled_write_raw_byte(char data, uint16_t index);
 '''
 header += '\n'.join(f'#define {name} {value}' for name, value in known.items())
 transactions = '''
 #include <assert.h>
 #include <string.h>
 #include "luna.h"
-static eva_pet_state_t sent_pet;
+static uint8_t sent_packet[32], packet_size;
 static unsigned sends;
 static void (*receiver)(uint8_t, const void *, uint8_t, void *);
 void transaction_register_rpc(int id, void (*fn)(uint8_t, const void *, uint8_t, void *)) {
     (void)id; receiver = fn;
 }
 bool transaction_rpc_send(int id, uint8_t size, const void *data) {
-    (void)id; assert(size == sizeof(eva_pet_state_t)); memcpy(&sent_pet, data, size); ++sends; return false;
+    (void)id; assert(size <= 32); memcpy(sent_packet, data, size); packet_size = size; ++sends; return false;
 }
 '''
 test = r'''
@@ -155,14 +160,11 @@ test = r'''
 #include <stdio.h>
 #include <stdlib.h>
 #include "eva_oled.c"
-#ifdef EVA_RIGHT
 #include "luna.c"
-#endif
 #include "font_ascii.c"
 static unsigned pixels, forwarded, mouse_calls;
 static report_keyboard_t forwarded_report;
 static uint8_t cursor_row, cursor_col;
-static char lines[16][6];
 static bool canvas[128][32];
 void original_send(report_keyboard_t *report) { ++forwarded; forwarded_report = *report; }
 void original_mouse(void) { ++mouse_calls; }
@@ -177,19 +179,6 @@ void press(uint8_t key, uint8_t flags) {
 void oled_set_cursor(uint8_t x, uint8_t y) {
     assert(x < 5 && y < 16); cursor_row = y; cursor_col = x;
 }
-void oled_write(const char *text, bool inverted) {
-    assert(cursor_col + strlen(text) <= 5);
-    while (*text) {
-        assert(*text >= 32 && *text <= 126);
-        lines[cursor_row][cursor_col] = *text;
-        for (uint8_t x = 0; x < 6; ++x)
-            for (uint8_t y = 0; y < 8; ++y)
-                canvas[cursor_row*8+y][cursor_col*6+x] =
-                    !!(font[(*text-32)*6+x] & (1 << y)) ^ inverted;
-        ++cursor_col;
-        ++text;
-    }
-}
 void oled_write_pixel(uint8_t x, uint8_t y, bool on) {
     assert(x < 32 && y < 128); canvas[y][x] = on; ++pixels;
 }
@@ -199,71 +188,38 @@ void oled_write_raw_P(const char *data, uint16_t size) {
         for (unsigned x = 0; x < 32; ++x)
             canvas[cursor_row*8+y][x] = ((uint8_t)data[y/8*32+x] >> (y%8)) & 1;
 }
-#ifndef EVA_RIGHT
-int main(void) {
-    assert(is_keyboard_master() && is_keyboard_left());
-    char name[6];
-    label(KC_A, name); assert(!strcmp(name, "A"));
-    label(KC_0, name); assert(!strcmp(name, "0"));
-    label(KC_F12, name); assert(!strcmp(name, "F12"));
-    label(0xFFFF, name); assert(!strcmp(name, "#FFFF"));
-    eva_oled_init(); assert(!receiver);
-    matrix_scan_user(); assert(!installed_driver);
-    host_driver_t original = {.keyboard_leds = original_leds, .send_keyboard = original_send, .send_mouse = original_mouse};
-    installed_driver = &original;
-    matrix_scan_user(); assert(installed_driver != &original);
-    assert(installed_driver->keyboard_leds() == 2);
-    installed_driver->send_mouse(); assert(mouse_calls == 1);
-    matrix_scan_user();
-    now = 100; press(KC_A, 0); assert(!strcmp(state.key, "a"));
-    assert(forwarded == 2);
-    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key, "A") && !state.last_mods);
-    leds.caps_lock = true;
-    press(KC_A, 0); assert(!strcmp(state.key, "A"));
-    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key, "a"));
-    leds.caps_lock = false;
-    press(KC_1 + 1, MOD_MASK_SHIFT); assert(!strcmp(state.key, "@"));
-    press(KC_LBRC, MOD_MASK_SHIFT); assert(!strcmp(state.key, "{"));
-    press(KC_COMM, MOD_MASK_SHIFT); assert(!strcmp(state.key, "<"));
-    press(KC_DOT, MOD_MASK_SHIFT); assert(!strcmp(state.key, ">"));
-    press(KC_SLSH, MOD_MASK_SHIFT); assert(!strcmp(state.key, "?"));
-    press(KC_SPC, 0); assert(!strcmp(state.key, "Space"));
-    press(KC_ENT, 0); assert(!strcmp(state.key, "Enter"));
-    press(KC_UP, 0); assert(!strcmp(state.key, "Up"));
-    report_keyboard_t held = {.mods = MOD_MASK_CTRL, .keys = {KC_A}};
-    installed_driver->send_keyboard(&held);
-    assert(!strcmp(state.key, "A") && state.last_mods == MOD_MASK_CTRL);
-    held.mods = 0; installed_driver->send_keyboard(&held);
-    assert(!strcmp(state.key, "A") && state.last_mods == MOD_MASK_CTRL);
-    held.keys[0] = 0; installed_driver->send_keyboard(&held);
-    press(KC_A + ('Q'-'A'), MOD_MASK_GUI | MOD_MASK_CTRL);
-    assert(!strcmp(state.key, "Q") && state.last_mods == (MOD_MASK_GUI | MOD_MASK_CTRL));
-    report_keyboard_t release = {0};
-    installed_driver->send_keyboard(&release);
-    release.mods = MOD_MASK_SHIFT;
-    installed_driver->send_keyboard(&release);
-    assert(!strcmp(state.key, "Q") && state.last_mods == (MOD_MASK_GUI | MOD_MASK_CTRL));
-    release.keys[0] = 1; installed_driver->send_keyboard(&release);
-    assert(!strcmp(state.key, "Q"));
-    assert(pet.jumps == 1 && !pet.space);
-    report_keyboard_t space = {.keys = {KC_SPC}};
-    installed_driver->send_keyboard(&space); assert(pet.space && pet.jumps == 2);
-    installed_driver->send_keyboard(&space); assert(pet.jumps == 2);
-    space.keys[0] = 0; installed_driver->send_keyboard(&space); assert(!pet.space);
-    press(KC_A + ('Q'-'A'), MOD_MASK_GUI | MOD_MASK_CTRL);
-    layer_state = 4; mods = MOD_MASK_CTRL; weak_mods = MOD_MASK_GUI; wpm = 41;
-    eva_oled_housekeeping(); assert(state.layer == 2);
-    assert(sends == 1 && sent_pet.wpm == 41 && sent_pet.mods == (MOD_MASK_CTRL | MOD_MASK_GUI));
-    assert(sent_pet.jumps == 2 && !sent_pet.space && sent_pet.awake);
-    eva_oled_housekeeping(); assert(sends == 1);
-    now += 50; activity = OLED_TIMEOUT; leds.caps_lock = true;
-    eva_oled_housekeeping(); assert(sends == 2 && !sent_pet.awake && sent_pet.caps);
-    eva_oled_render(); assert(pixels);
-    assert(!strcmp(lines[8], " MC  ") && !strcmp(lines[9], "  Q  "));
+
+void oled_write_raw_byte(char data, uint16_t index) {
+    assert(index < 512);
+    for (uint8_t bit = 0; bit < 8; ++bit)
+        canvas[index / 32 * 8 + bit][index % 32] = !!((uint8_t)data & (1 << bit));
+}
+static void expect_text(uint8_t row, const char *text, uint8_t left) {
+    for (uint8_t x = 0; x < 32; ++x)
+        for (uint8_t y = 0; y < 8; ++y) {
+            uint8_t column = 0;
+            if (x >= left && x < left + 6 * strlen(text)) {
+                uint8_t offset = x - left;
+                column = font[(text[offset / 6] - 32) * 6 + offset % 6];
+            }
+            assert(canvas[row*8+y][x] == !!(column & (1 << y)));
+        }
+}
+#ifdef EVA_RIGHT
+static void expect_frame(const char *image, uint8_t row) {
+    for (unsigned y = 24; y < 56; ++y)
+        for (unsigned x = 0; x < 32; ++x) {
+            bool expected = y >= row*8u && y < row*8u+24u &&
+                (((uint8_t)image[(y-row*8)/8*32+x] >> ((y-row*8)%8)) & 1);
+            assert(canvas[y][x] == expected);
+        }
+}
+#endif
+static void check_layout(void) {
+    state.pet.awake = true;
     const uint8_t digits[3][5] = {{2, 6, 2, 2, 7}, {6, 1, 2, 4, 7}, {6, 1, 2, 1, 6}};
     for (uint8_t layer = 0; layer < 3; ++layer) {
-        state.layer = layer;
-        eva_oled_render();
+        state.layer = layer; eva_oled_render();
         for (uint8_t y = 0; y < EVA_ICON_SIZE; ++y)
             for (uint8_t x = 0; x < EVA_ICON_SIZE; ++x)
                 assert(canvas[4+y][4+x] == !!(eva_icons[EVA_LAYERS][y] & (1 << (13-x))));
@@ -273,58 +229,161 @@ int main(void) {
     }
     const uint8_t masks[] = {MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_CTRL, MOD_MASK_SHIFT};
     for (unsigned mods = 0; mods < 256; ++mods) {
-        state.mods = mods;
-        state.last_mods = mods;
-        eva_oled_render();
-        for (uint8_t i = 0; i < 4; ++i)
-            for (uint8_t y = 0; y < EVA_ICON_SIZE; ++y)
-                for (uint8_t x = 0; x < EVA_ICON_SIZE; ++x)
-                    assert(canvas[24+16*(i/2)+y][1+16*(i%2)+x] ==
-                        (!!(eva_icons[i][y] & (1 << (13-x))) ^ !!(mods & masks[i])));
+        state.pet.mods = mods; eva_oled_render();
+        for (uint8_t i = 0; i < 4; ++i) {
+            uint8_t left = 18 * (i % 2), top = 60 + 20 * (i / 2);
+            for (uint8_t y = 0; y < 14; ++y) {
+                for (uint8_t x = 0; x < 14; ++x) {
+                    bool corner = ((y == 0 || y == 13) && (x < 2 || x > 11)) ||
+                                  ((y == 1 || y == 12) && (x == 0 || x == 13));
+                    bool border = y == 0 || y == 13 || x == 0 || x == 13 ||
+                                  ((y == 1 || y == 12) && (x == 1 || x == 12));
+                    bool glyph = false;
+                    if (x >= 3 && x < 11 && y >= 3 && y < 11)
+                        glyph = !!(eva_icons[i][1 + ((y-3)*12+6)/8] &
+                                   (1 << (12-((x-3)*12+6)/8)));
+                    glyph ^= !!(mods & masks[i]);
+                    assert(canvas[top+y][left+x] == (!corner && (border || glyph)));
+                }
+            }
+        }
+        for (uint8_t y = 60; y < 94; ++y)
+            for (uint8_t x = 14; x < 18; ++x) assert(!canvas[y][x]);
+        for (uint8_t y = 74; y < 80; ++y)
+            for (uint8_t x = 0; x < 32; ++x) assert(!canvas[y][x]);
     }
-    assert(!strcmp(lines[8], "MACS "));
-    puts("OK left: actual keyboard reports, forwarding, US text, chords, icons, layers, pet RPC");
-    if (getenv("EVA_PREVIEW")) {
-        state.mods = MOD_MASK_CTRL; state.last_mods = 0; strcpy(state.key, "Enter");
+    strcpy(state.key[0], "Enter"); strcpy(state.key[1], "Q");
+    state.last_mods[0] = 0; state.last_mods[1] = MOD_MASK_GUI;
+    eva_oled_render();
+    expect_text(12, "", 16); expect_text(13, "Enter", 1);
+    expect_text(14, "M", 13); expect_text(15, "Q", 13);
+    state.last_mods[1] = 0; strcpy(state.key[1], "a"); eva_oled_render();
+    expect_text(14, "", 16); expect_text(15, "a", 13);
+    assert(pixels);
+}
+static bool preview(void) {
+    if (!getenv("EVA_PREVIEW")) return false;
+    puts("PREVIEW");
+    state.pet.awake = true;
+    strcpy(state.key[0], "Enter"); strcpy(state.key[1], "a");
+    for (uint8_t i = 0; i < 3; ++i) {
+        state.layer = i; state.pet.mods = i ? MOD_MASK_GUI | MOD_MASK_SHIFT : 0;
         eva_oled_render(); fwrite(canvas, 1, sizeof(canvas), stdout);
     }
+    return true;
+}
+#ifndef EVA_RIGHT
+int main(void) {
+    if (preview()) return 0;
+    assert(is_keyboard_master() && is_keyboard_left());
+    char name[6];
+    label(KC_A, name); assert(!strcmp(name, "A"));
+    label(KC_0, name); assert(!strcmp(name, "0"));
+    label(KC_F12, name); assert(!strcmp(name, "F12"));
+    label(0xFFFF, name); assert(!strcmp(name, "#FFFF"));
+    eva_oled_init(); assert(receiver);
+    matrix_scan_user(); assert(!installed_driver);
+    host_driver_t original = {.keyboard_leds = original_leds, .send_keyboard = original_send, .send_mouse = original_mouse};
+    installed_driver = &original;
+    matrix_scan_user(); assert(installed_driver != &original);
+    assert(installed_driver->keyboard_leds() == 2);
+    installed_driver->send_mouse(); assert(mouse_calls == 1);
+    matrix_scan_user();
+    now = 100; press(KC_A, 0); assert(!strcmp(state.key[1], "a"));
+    assert(forwarded == 2);
+    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "A") && !state.last_mods[1]);
+    leds.caps_lock = true;
+    press(KC_A, 0); assert(!strcmp(state.key[1], "A"));
+    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "a"));
+    leds.caps_lock = false;
+    press(KC_1 + 1, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "@"));
+    press(KC_LBRC, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "{"));
+    press(KC_COMM, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "<"));
+    press(KC_DOT, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], ">"));
+    press(KC_SLSH, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "?"));
+    press(KC_SPC, 0); assert(!strcmp(state.key[1], "Space"));
+    press(KC_ENT, 0); assert(!strcmp(state.key[1], "Enter") && !strcmp(state.key[0], "Space"));
+    press(KC_UP, 0); assert(!strcmp(state.key[1], "Up") && !strcmp(state.key[0], "Enter"));
+    report_keyboard_t held = {.mods = MOD_MASK_CTRL, .keys = {KC_A}};
+    installed_driver->send_keyboard(&held);
+    assert(!strcmp(state.key[1], "A") && state.last_mods[1] == MOD_MASK_CTRL);
+    held.mods = 0; installed_driver->send_keyboard(&held);
+    assert(!strcmp(state.key[1], "A") && state.last_mods[1] == MOD_MASK_CTRL);
+    held.keys[0] = 0; installed_driver->send_keyboard(&held);
+    press(KC_A + ('Q'-'A'), MOD_MASK_GUI | MOD_MASK_CTRL);
+    assert(!strcmp(state.key[1], "Q") && state.last_mods[1] == (MOD_MASK_GUI | MOD_MASK_CTRL));
+    report_keyboard_t release = {0};
+    installed_driver->send_keyboard(&release);
+    release.mods = MOD_MASK_SHIFT;
+    installed_driver->send_keyboard(&release);
+    assert(!strcmp(state.key[1], "Q") && state.last_mods[1] == (MOD_MASK_GUI | MOD_MASK_CTRL));
+    release.keys[0] = 1; installed_driver->send_keyboard(&release);
+    assert(!strcmp(state.key[1], "Q"));
+    assert(state.pet.jumps == 1 && !state.pet.space);
+    report_keyboard_t space = {.keys = {KC_SPC}};
+    installed_driver->send_keyboard(&space); assert(state.pet.space && state.pet.jumps == 2);
+    installed_driver->send_keyboard(&space); assert(state.pet.jumps == 2);
+    space.keys[0] = 0; installed_driver->send_keyboard(&space); assert(!state.pet.space);
+    press(KC_A + ('Q'-'A'), MOD_MASK_GUI | MOD_MASK_CTRL);
+    layer_state = 4; mods = MOD_MASK_CTRL; weak_mods = MOD_MASK_GUI; wpm = 41;
+    eva_oled_housekeeping(); assert(state.layer == 2);
+    display_state_t sent; memcpy(&sent, sent_packet, sizeof(sent));
+    assert(packet_size == sizeof(state));
+    assert(sends == 1 && sent.pet.wpm == 41 && sent.pet.mods == (MOD_MASK_CTRL | MOD_MASK_GUI));
+    assert(sent.pet.jumps == 2 && !sent.pet.space && sent.pet.awake);
+    eva_oled_housekeeping(); assert(sends == 1);
+    now += 50; activity = OLED_TIMEOUT; leds.caps_lock = true;
+    eva_oled_housekeeping(); memcpy(&sent, sent_packet, sizeof(sent));
+    assert(sends == 2 && !sent.pet.awake && sent.pet.caps);
+    assert(!memcmp(sent.key, state.key, sizeof(state.key)));
+    display_state_t saved = state; saved.layer = 0;
+    receiver(sizeof(saved), &saved, 0, NULL); assert(state.layer == 2);
+    report_keyboard_t pair = {.keys = {KC_A, KC_1}};
+    installed_driver->send_keyboard(&pair);
+    assert(!strcmp(state.key[0], "A") && !strcmp(state.key[1], "1"));
+    installed_driver->send_keyboard(&pair);
+    assert(!strcmp(state.key[0], "A") && !strcmp(state.key[1], "1"));
+
+    state.pet.awake = true;
+    check_layout();
+    puts("OK master: final USB output, ordered two-key history, forwarding, shared layout and RPC");
 }
 #else
-static void expect_frame(const char *image, uint8_t row) {
-    for (unsigned y = 0; y < 128; ++y)
-        for (unsigned x = 0; x < 32; ++x) {
-            bool expected = y >= row*8u && y < row*8u+24u &&
-                (((uint8_t)image[(y-row*8)/8*32+x] >> ((y-row*8)%8)) & 1);
-            assert(canvas[y][x] == expected);
-        }
-}
 int main(void) {
-    assert(!is_keyboard_master() && !is_keyboard_left());
+    if (preview()) return 0;
+    assert(!is_keyboard_master());
     eva_oled_init(); assert(receiver);
-    eva_pet_state_t packet = {.awake = true};
-    receiver(1, &packet, 0, NULL); assert(!pet.awake);
-    receiver(sizeof(packet), &packet, 0, NULL);
-    eva_oled_render(); assert(screen_on); expect_frame(sit[1], 7);
-    now = 199; eva_oled_render(); expect_frame(sit[1], 7);
-    now = 200; eva_oled_render(); expect_frame(sit[0], 7);
+    matrix_scan_user(); assert(!installed_driver);
+    display_state_t packet = {.pet = {.awake = true}, .layer = 2,
+                              .last_mods = {0, MOD_MASK_GUI}, .key = {"Enter", "Q"}};
+    receiver(1, &packet, 0, NULL); assert(!state.pet.awake);
+    packet.key[1][5] = 'x';
+    receiver(sizeof(packet), &packet, 0, NULL); assert(!state.pet.awake);
+    packet.key[1][5] = 0;
+    receiver(sizeof(packet), &packet, 0, NULL); assert(!memcmp(&state, &packet, sizeof(state)));
+    eva_oled_housekeeping(); assert(!sends && !memcmp(&state, &packet, sizeof(state)));
+    check_layout();
+    now = 0; state.pet.mods = 0;
+    eva_oled_render(); expect_frame(sit[1], 4);
+    now = 199; eva_oled_render(); expect_frame(sit[1], 4);
+    now = 200; eva_oled_render(); expect_frame(sit[0], 4);
     const uint8_t speeds[] = {0, 10, 11, 40, 41, 255};
     const char *images[] = {sit[1], sit[0], walk[1], walk[0], run[1], run[0]};
     for (unsigned i = 0; i < sizeof(speeds); ++i) {
-        now += 200; pet.wpm = speeds[i]; eva_oled_render(); expect_frame(images[i], 7);
+        now += 200; state.pet.wpm = speeds[i]; eva_oled_render(); expect_frame(images[i], 4);
     }
-    now += 200; pet.mods = MOD_MASK_CTRL; eva_oled_render(); expect_frame(sneak[1], 7);
-    now += 200; pet.caps = true; eva_oled_render(); expect_frame(bark[0], 7);
-    now += 200; pet.caps = false; pet.mods = 0; pet.wpm = 0;
-    pet.jumps = 255; eva_oled_render(); expect_frame(sit[1], 6);
-    now += 200; pet.jumps = 0; eva_oled_render(); expect_frame(sit[0], 6);
-    now += 200; eva_oled_render(); expect_frame(sit[1], 7);
-    now += 200; pet.space = true; eva_oled_render(); expect_frame(sit[0], 6);
-    now += 200; eva_oled_render(); expect_frame(sit[1], 6);
-    now += 200; pet.space = false; eva_oled_render(); expect_frame(sit[0], 7);
-    pet.awake = false; eva_oled_render(); assert(!screen_on);
-    pet.awake = true; now += 200; eva_oled_render(); assert(screen_on);
-    puts("OK right: exact Luna frames, WPM thresholds, Caps/Control priority, short/held Space, sleep, RPC");
-    if (getenv("EVA_PREVIEW")) fwrite(canvas, 1, sizeof(canvas), stdout);
+    now += 200; state.pet.mods = MOD_MASK_CTRL; eva_oled_render(); expect_frame(sneak[1], 4);
+    now += 200; state.pet.caps = true; eva_oled_render(); expect_frame(bark[0], 4);
+    now += 200; state.pet.caps = false; state.pet.mods = 0; state.pet.wpm = 0;
+    state.pet.jumps = 255; eva_oled_render(); expect_frame(sit[1], 3);
+    now += 200; state.pet.jumps = 0; eva_oled_render(); expect_frame(sit[0], 3);
+    now += 200; eva_oled_render(); expect_frame(sit[1], 4);
+    now += 200; state.pet.space = true; eva_oled_render(); expect_frame(sit[0], 3);
+    now += 200; eva_oled_render(); expect_frame(sit[1], 3);
+    now += 200; state.pet.space = false; eva_oled_render(); expect_frame(sit[0], 4);
+    state.pet.awake = false; eva_oled_render(); assert(!screen_on);
+    state.pet.awake = true; now += 200; eva_oled_render(); assert(screen_on);
+    puts("OK peripheral: complete state, identical layout, Luna frames, WPM, jumps and sleep");
 }
 #endif
 
@@ -343,8 +402,9 @@ with tempfile.TemporaryDirectory() as directory:
                         *(['-DEVA_RIGHT'] if side == 'right' else []),
                         '-DQMK_KEYBOARD_H="mock.h"', '-I', str(tmp), '-I', str(root),
                         str(tmp / 'test.c'), '-o', str(binary)], check=True)
-        result = subprocess.run([str(binary)], capture_output=True)
+        result = subprocess.run([str(binary)], capture_output=True, env={k: v for k, v in os.environ.items() if k != 'EVA_PREVIEW'})
         assert result.returncode == 0, result.stderr.decode()
         print(result.stdout.split(b'\n')[0].decode())
         if os.environ.get('EVA_PREVIEW'):
-            Path(os.environ['EVA_PREVIEW'] + '-' + side + '.raw').write_bytes(result.stdout.split(b'\n', 1)[1])
+            preview_result = subprocess.run([str(binary)], capture_output=True, check=True)
+            Path(os.environ['EVA_PREVIEW'] + '-' + side + '.raw').write_bytes(preview_result.stdout.split(b'\n', 1)[1])

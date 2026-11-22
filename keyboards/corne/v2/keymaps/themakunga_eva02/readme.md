@@ -58,35 +58,32 @@ guardados en EEPROM pueden reemplazar estos ajustes.
 
 ## OLED and animation
 
-Both halves use 270-degree rotation (32 × 128 portrait) and share `users/eva/`, with different
-content compiled into each side:
+Both halves use the same 270-degree portrait layout (32 × 128), from top to bottom:
 
-- **Left / USB master:** the Nerd Font layers glyph (1/2/3), the 2 × 2 Command/Option/Control/Shift
-  grid and the last transmitted character or shortcut. Held modifiers invert their icons. Shortcut
-  flags use `M`, `A`, `C` and `S`; releasing keys or pressing only a layer/modifier preserves the
-  last output.
-- **Right / peripheral:**
-  [Luna by HellSingCoder](https://github.com/HellSingCoder/qmk_firmware/tree/33d7fa1180d232dcdb024c68a8f4629dced32afb/keyboards/sofle/keymaps/helltm).
-  The dog sits at up to 10 WPM, walks at 11–40 and runs above 40. Control makes it sneak, Caps Lock
-  makes it bark (taking priority over Control), and Space makes it jump. Short Space taps remain
-  visible even after release. The original ten 32 × 24 bitmap frames are preserved.
+1. The Nerd Font layers glyph and current layer number (1/2/3).
+2. Luna, using the original ten 32 × 24 frames by HellSingCoder.
+3. A centered 2 × 2 grid: Command/Option above Control/Shift. Every icon has a border and spacing;
+   held modifiers invert the icon interior.
+4. The last two transmitted keyboard outputs, oldest above newest, with pixel-centered labels.
+   Shortcut flags (`M`, `A`, `C`, `S`) stay attached to the corresponding output.
 
-![Actual OLED framebuffer previews: left status and right Luna](../../../../../docs/eva-oled-preview.png)
+![Shared OLED framebuffer on both halves, layers 1/2/3](../../../../../docs/eva-oled-preview.png)
 
-The left display observes final QMK 6-key USB reports, including tap dance, Shift overrides and
-Sofle's arrow remap. US Shift punctuation and Caps Lock affect the character shown. Host text
-transformations, dead keys and input methods cannot be inferred from USB reports. Mouse, RGB and
-consumer/media reports do not replace the last keyboard output.
+The USB master observes final QMK 6-key reports, including tap dance, Shift overrides and arrow
+remaps. Releases and modifier/layer-only actions preserve both history entries. US Shift and Caps
+Lock affect labels; host input methods, dead keys and text transformations remain outside the
+keyboard's view. Mouse, RGB and consumer/media reports do not replace the history.
 
-A compact RPC packet sends only Luna's WPM, modifiers, Caps Lock, Space/jump and wake state from
-left to right, with attempts limited to once per 50 ms. Luna alternates frames every 200 ms and
-sleeps after 60 seconds of input/LED inactivity. Status glyphs and output formatting are absent from
-the right firmware; Luna's bitmaps are absent from the left. See
+Luna sits at up to 10 WPM, walks at 11–40 and runs above 40. Control makes it sneak, Caps Lock makes
+it bark (with priority over Control), and Space makes it jump. Short Space taps survive release;
+held Space keeps the dog raised. Luna animates every 200 ms and both displays sleep after 60 seconds
+of input/LED inactivity. A 21-byte RPC packet synchronizes layer, modifiers, both outputs and Luna
+state, with attempts limited to once per 50 ms. See
 [asset provenance and licenses](../../../../../users/eva/ASSETS.md).
 
-The side-specific firmware fixes the left half as USB master and the right as peripheral so LTO can
-remove unused role paths. Connect USB to the left during normal use. Match each firmware filename to
-its physical side; do not swap them. Verify both OLED orientations and split behavior on hardware.
+Both halves use the same firmware image. Keep USB on the left for normal use and update both halves
+together; the old side-specific RPC state is incompatible. Verify portrait orientation and split
+behavior on physical hardware.
 
 ## Compilación
 
@@ -95,16 +92,15 @@ Desde la raíz del repositorio, con un entorno QMK existente:
 ```sh
 make setup
 make build eva02
-make flash-left eva02
-make flash-right eva02
+make flash eva02
 ```
 
 Run `make setup QMK_HOME="/path/to/qmk_firmware"` for a custom checkout, or `make update` to refresh
 both revision links. See the root README for setup and update behavior.
 
 The **Build QMK firmware** and **Promote release** workflows compile the targets in `qmk.json`. The
-`themakunga_eva02_left` and `themakunga_eva02_right` targets include this shared keymap and
-configuration. Flash each matching side separately. VIA is disabled.
+`themakunga_eva02` target uses one shared keymap and image for both halves. Flash both halves with
+that same image by running `make flash eva02` once per connected half. VIA is disabled.
 
 ## Comprobaciones
 

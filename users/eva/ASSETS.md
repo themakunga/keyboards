@@ -30,6 +30,11 @@ For each glyph, ImageMagick renders the installed font at 256 points, trims the 
 inside 12 × 12 pixels, centers it in a 14 × 14 cell and thresholds it at 45 percent. Each C row
 stores the leftmost pixel in bit 13. No font installation is required to build the firmware.
 
+Modifier cells have 14 × 14 rounded outlines with a two-pixel corner inset. The centered 2 × 2 grid
+leaves four blank pixels between columns and six between rows; active fills stay inside the rounded
+outline. Modifiers are sampled into centered 8 × 8 symbols, leaving two pixels of interior padding
+between each symbol and its outline. The original source bitmaps are unchanged.
+
 ## Luna keyboard pet
 
 `luna.c` preserves the ten original 32 × 24 monochrome bitmap frames (two each for sit, walk, run,
@@ -39,6 +44,6 @@ Copyright 2021 HellSingCoder, GPL-2.0-or-later; the source notice is preserved a
 is in [LICENSE](LICENSE).
 
 Adaptations: a standalone C renderer, portrait centering, a cleared jump region, explicit timeout,
-and input state sent from the left master over QMK RPC. The right build contains Luna only; the left
-contains Nerd Font status and the final keyboard output. No artwork was rescaled or redrawn. The
+and complete display state sent from the USB master over QMK RPC. Both halves render the same layer,
+Luna, bordered modifier grid and two-key output history. No artwork was rescaled or redrawn. The
 former monitor animation is no longer built. Historical Bongo Cat license notices are retained.

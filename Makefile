@@ -5,15 +5,15 @@ QMK_HOME ?= $(HOME)/qmk_firmware
 KEYBOARDS := eva01 eva02
 BOARD_eva01 := sofle/v2
 BOARD_eva02 := corne/v2
-ACTION := $(filter build flash-left flash-right,$(MAKECMDGOALS))
+ACTION := $(filter build flash,$(MAKECMDGOALS))
 KEYBOARD := $(word 2,$(MAKECMDGOALS))
 
 ifneq ($(ACTION),)
 ifneq ($(words $(MAKECMDGOALS)),2)
-$(error Usage: make <build|flash-left|flash-right> <eva01|eva02>)
+$(error Usage: make <build|flash> <eva01|eva02>)
 endif
 ifneq ($(firstword $(MAKECMDGOALS)),$(ACTION))
-$(error Put the action first: make <build|flash-left|flash-right> <eva01|eva02>)
+$(error Put the action first: make <build|flash> <eva01|eva02>)
 endif
 ifneq ($(filter $(KEYBOARD),$(KEYBOARDS)),$(KEYBOARD))
 $(error Unknown keyboard '$(KEYBOARD)'; choose $(KEYBOARDS))
@@ -30,17 +30,17 @@ $(error Usage: make setup or make update)
 endif
 endif
 
-.PHONY: help setup update build flash-left flash-right
+.PHONY: help setup update build flash
 help:
 	@printf '%s\n' 'Usage: make <command> [keyboard]' '' \
 	  'Commands:' \
-	  '  setup          Prepare QMK checkout and configure userspace' \
-	  '  update         Refresh local keyboard links in QMK' \
-	  '  build eva01        Compile both left and right firmware' \
-	  '  flash-left eva01   Compile and flash only the left half' \
-	  '  flash-right eva01  Compile and flash only the right half' \
-	  '  help           Show this help (default)' '' \
+	  '  setup              Prepare QMK checkout and configure userspace' \
+	  '  update             Refresh local keyboard links in QMK' \
+	  '  build eva01        Compile the shared firmware' \
+	  '  flash eva01        Compile and flash the connected half' \
+	  '  help               Show this help (default)' '' \
 	  'Keyboards: $(KEYBOARDS)' \
+	  'Each keyboard uses one image for both halves; run flash once per connected half.' \
 	  'Requires QMK CLI and Git; setup creates a missing firmware checkout.' \
 	  'Override the checkout with QMK_HOME=/path/to/qmk_firmware.'
 
@@ -54,8 +54,7 @@ update:
 	QMK_HOME="$(QMK_HOME)" sh scripts/link-keyboards.sh
 
 build:
-	qmk compile -kb $(BOARD_$(KEYBOARD)) -km themakunga_$(KEYBOARD)_left
-	qmk compile -kb $(BOARD_$(KEYBOARD)) -km themakunga_$(KEYBOARD)_right
+	qmk compile -kb $(BOARD_$(KEYBOARD)) -km themakunga_$(KEYBOARD)
 
-flash-left flash-right:
-	qmk flash -kb $(BOARD_$(KEYBOARD)) -km themakunga_$(KEYBOARD)_$(patsubst flash-%,%,$@)
+flash:
+	qmk flash -kb $(BOARD_$(KEYBOARD)) -km themakunga_$(KEYBOARD)

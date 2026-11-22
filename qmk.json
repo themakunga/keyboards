@@ -1,9 +1,7 @@
 {
   "userspace_version": "1.0",
   "build_targets": [
-    ["sofle/v2", "themakunga_eva01_left"],
-    ["sofle/v2", "themakunga_eva01_right"],
-    ["corne/v2", "themakunga_eva02_left"],
-    ["corne/v2", "themakunga_eva02_right"]
+    ["sofle/v2", "themakunga_eva01"],
+    ["corne/v2", "themakunga_eva02"]
   ]
 }
