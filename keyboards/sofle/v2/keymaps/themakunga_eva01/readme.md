@@ -82,6 +82,10 @@ The right display uses 270-degree portrait orientation (32 × 128). It shows Lun
 ten 32 × 24 frames by HellSingCoder, followed by the last **three** transmitted keyboard outputs,
 oldest above newest. Shortcut flags (`M`, `A`, `C`, `S`) stay attached to their output.
 
+Both compositions are centered horizontally and vertically. With Luna resting and the history
+populated, both displays have 24-pixel top and 25-pixel bottom margins. Luna's jump remains relative
+to its resting position.
+
 The current keymap still defines only `base`, `symbol` and `functions`; the `operations` display
 state is prepared, but its key assignments and activation are pending a decision.
 

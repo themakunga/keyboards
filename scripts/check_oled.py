@@ -216,17 +216,41 @@ static void expect_text(uint8_t row, const char *text, uint8_t left) {
                 uint8_t offset = x - left;
                 column = font[(text[offset / 6] - 32) * 6 + offset % 6];
             }
-            assert(canvas[row*8+y][x] == !!(column & (1 << y)));
+            uint8_t top = row * 8;
+#ifdef EVA_OLED_SPLIT_STATUS
+            if (is_keyboard_left()) top += 22;
+#endif
+            assert(canvas[top+y][x] == !!(column & (1 << y)));
         }
 }
 #ifdef EVA_RIGHT
+#ifdef EVA_OLED_SPLIT_STATUS
+#define PET_ROW 3
+#else
+#define PET_ROW 4
+#endif
 static void expect_frame(const char *image, uint8_t row) {
-    for (unsigned y = 24; y < 56; ++y)
+    for (unsigned y = (PET_ROW - 1) * 8; y < (PET_ROW + 3) * 8; ++y)
         for (unsigned x = 0; x < 32; ++x) {
             bool expected = y >= row*8u && y < row*8u+24u &&
                 (((uint8_t)image[(y-row*8)/8*32+x] >> ((y-row*8)%8)) & 1);
             assert(canvas[y][x] == expected);
         }
+}
+#endif
+#ifdef EVA_OLED_SPLIT_STATUS
+static void expect_centered(void) {
+    unsigned left = 32, right = 0, top = 128, bottom = 0;
+    for (unsigned y = 0; y < 128; ++y)
+        for (unsigned x = 0; x < 32; ++x)
+            if (canvas[y][x]) {
+                if (x < left) left = x;
+                if (x > right) right = x;
+                if (y < top) top = y;
+                if (y > bottom) bottom = y;
+            }
+    assert(top < 128 && abs((int)top - (127 - (int)bottom)) <= 1);
+    assert(abs((int)left - (31 - (int)right)) <= 1);
 }
 #endif
 static void check_layout(void) {
@@ -236,11 +260,12 @@ static void check_layout(void) {
         strcpy(state.key[0], "Space"); strcpy(state.key[1], "Enter"); strcpy(state.key[2], "Q");
         state.last_mods[0] = 0; state.last_mods[1] = 0; state.last_mods[2] = MOD_MASK_GUI;
         eva_oled_render();
-        expect_text(8, "", 16); expect_text(9, "Space", 1);
-        expect_text(10, "", 16); expect_text(11, "Enter", 1);
-        expect_text(12, "M", 13); expect_text(13, "Q", 13);
-        for (uint8_t y = 0; y < 24; ++y)
+        expect_text(7, "", 16); expect_text(8, "Space", 1);
+        expect_text(9, "", 16); expect_text(10, "Enter", 1);
+        expect_text(11, "M", 13); expect_text(12, "Q", 13);
+        for (uint8_t y = 0; y < 16; ++y)
             for (uint8_t x = 0; x < 32; ++x) assert(!canvas[y][x]);
+        expect_centered();
         return;
     }
     const char *names[4][2] = {{"base", ""}, {"sym", "bol"}, {"func", "tions"}, {"opera", "tions"}}; // cspell:ignore tions
@@ -249,14 +274,14 @@ static void check_layout(void) {
         state.layers = mask; state.layer = get_highest_layer(mask); eva_oled_render();
         assert(screen_on);
         for (uint8_t i = 0; i < 4; ++i) {
-            assert(canvas[21 - 4*i][15] == (i == state.layer));
-            assert(canvas[18 - 4*i][1] && canvas[18 - 4*i][29]);
+            assert(canvas[43 - 4*i][15] == (i == state.layer));
+            assert(canvas[40 - 4*i][1] && canvas[40 - 4*i][29]);
         }
         for (uint8_t line = 0; line < 2; ++line) {
             const char *name = names[state.layer][line];
             expect_text(3 + line, name, (32 - 6 * strlen(name)) / 2);
         }
-        for (uint8_t y = 0; y < 24; ++y)
+        for (uint8_t y = 22; y < 46; ++y)
             assert(!canvas[y][0] && !canvas[y][30] && !canvas[y][31]);
         master = false; eva_oled_render(); master = true;
     }
@@ -279,7 +304,7 @@ static void check_layout(void) {
         state.pet.mods = mods; eva_oled_render();
         for (uint8_t i = 0; i < 4; ++i) {
 #ifdef EVA_OLED_SPLIT_STATUS
-            uint8_t left = 16 * (i % 2), top = 48 + 17 * (i / 2);
+            uint8_t left = 16 * (i % 2), top = 70 + 17 * (i / 2);
             const uint8_t size = 16;
             for (uint8_t y = 1; y < 15; ++y)
                 for (uint8_t x = 1; x < 15; ++x)
@@ -310,7 +335,7 @@ static void check_layout(void) {
             }
         }
 #ifdef EVA_OLED_SPLIT_STATUS
-        for (uint8_t x = 0; x < 32; ++x) assert(!canvas[64][x]);
+        for (uint8_t x = 0; x < 32; ++x) assert(!canvas[86][x]);
 #else
         for (uint8_t y = 60; y < 94; ++y)
             for (uint8_t x = 14; x < 18; ++x) assert(!canvas[y][x]);
@@ -327,6 +352,9 @@ static void check_layout(void) {
     state.last_mods[2] = 0; strcpy(state.key[2], "a"); eva_oled_render();
     expect_text(14, "", 16); expect_text(15, "a", 13);
     assert(pixels);
+#endif
+#ifdef EVA_OLED_SPLIT_STATUS
+    expect_centered();
 #endif
 }
 static bool preview(void) {
@@ -443,23 +471,23 @@ int main(void) {
     eva_oled_housekeeping(); assert(!sends && !memcmp(&state, &packet, sizeof(state)));
     check_layout();
     now = 0; state.pet.mods = 0;
-    eva_oled_render(); expect_frame(sit[1], 4);
-    now = 199; eva_oled_render(); expect_frame(sit[1], 4);
-    now = 200; eva_oled_render(); expect_frame(sit[0], 4);
+    eva_oled_render(); expect_frame(sit[1], PET_ROW);
+    now = 199; eva_oled_render(); expect_frame(sit[1], PET_ROW);
+    now = 200; eva_oled_render(); expect_frame(sit[0], PET_ROW);
     const uint8_t speeds[] = {0, 10, 11, 40, 41, 255};
     const char *images[] = {sit[1], sit[0], walk[1], walk[0], run[1], run[0]};
     for (unsigned i = 0; i < sizeof(speeds); ++i) {
-        now += 200; state.pet.wpm = speeds[i]; eva_oled_render(); expect_frame(images[i], 4);
+        now += 200; state.pet.wpm = speeds[i]; eva_oled_render(); expect_frame(images[i], PET_ROW);
     }
-    now += 200; state.pet.mods = MOD_MASK_CTRL; eva_oled_render(); expect_frame(sneak[1], 4);
-    now += 200; state.pet.caps = true; eva_oled_render(); expect_frame(bark[0], 4);
+    now += 200; state.pet.mods = MOD_MASK_CTRL; eva_oled_render(); expect_frame(sneak[1], PET_ROW);
+    now += 200; state.pet.caps = true; eva_oled_render(); expect_frame(bark[0], PET_ROW);
     now += 200; state.pet.caps = false; state.pet.mods = 0; state.pet.wpm = 0;
-    state.pet.jumps = 255; eva_oled_render(); expect_frame(sit[1], 3);
-    now += 200; state.pet.jumps = 0; eva_oled_render(); expect_frame(sit[0], 3);
-    now += 200; eva_oled_render(); expect_frame(sit[1], 4);
-    now += 200; state.pet.space = true; eva_oled_render(); expect_frame(sit[0], 3);
-    now += 200; eva_oled_render(); expect_frame(sit[1], 3);
-    now += 200; state.pet.space = false; eva_oled_render(); expect_frame(sit[0], 4);
+    state.pet.jumps = 255; eva_oled_render(); expect_frame(sit[1], PET_ROW - 1);
+    now += 200; state.pet.jumps = 0; eva_oled_render(); expect_frame(sit[0], PET_ROW - 1);
+    now += 200; eva_oled_render(); expect_frame(sit[1], PET_ROW);
+    now += 200; state.pet.space = true; eva_oled_render(); expect_frame(sit[0], PET_ROW - 1);
+    now += 200; eva_oled_render(); expect_frame(sit[1], PET_ROW - 1);
+    now += 200; state.pet.space = false; eva_oled_render(); expect_frame(sit[0], PET_ROW);
     left = false;
     state.pet.awake = false; eva_oled_render(); assert(!screen_on);
     state.pet.awake = true; now += 200; eva_oled_render(); assert(screen_on);

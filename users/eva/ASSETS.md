@@ -39,6 +39,10 @@ unchanged. EVA01 replaces the static layers glyph with four overlapping 29-pixel
 planes, offset vertically by four pixels. The compact stack fills only the selected layer, leaving
 Base outlined when another layer is selected.
 
+EVA01's left status block is shifted down by 22 pixels and its right Luna/history block up by eight.
+The resting compositions have balanced 24/25-pixel vertical margins and horizontal margins that
+differ by at most one pixel. The original artwork and spacing within each composition are unchanged.
+
 ## Luna keyboard pet
 
 `luna.c` preserves the ten original 32 × 24 monochrome bitmap frames (two each for sit, walk, run,

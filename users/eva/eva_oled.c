@@ -148,7 +148,13 @@ static void text_at(uint8_t row, const char *text) {
             uint8_t offset = x - left;
             column = pgm_read_byte(&font[(text[offset / 6] - 32) * 6 + offset % 6]);
         }
-        oled_write_raw_byte(column, row * 32 + x);
+#ifdef EVA_OLED_SPLIT_STATUS
+        if (is_keyboard_left()) {
+            for (uint8_t y = 0; y < 8; ++y)
+                oled_write_pixel(x, row * 8 + 22 + y, column & (1 << y));
+        } else
+#endif
+            oled_write_raw_byte(column, row * 32 + x);
     }
 }
 
@@ -165,7 +171,7 @@ static void icon_at(uint8_t left, uint8_t top, const uint16_t icon[EVA_ICON_SIZE
 static void render_modifiers(void) {
     for (uint8_t i = 0; i < 4; ++i) {
 #ifdef EVA_OLED_SPLIT_STATUS
-        uint8_t left = 16 * (i % 2), top = 48 + 17 * (i / 2);
+        uint8_t left = 16 * (i % 2), top = 70 + 17 * (i / 2);
         const uint8_t size = 16, glyph_size = 12, padding = 2;
 #else
         uint8_t left = 18 * (i % 2), top = 60 + 20 * (i / 2);
@@ -210,14 +216,14 @@ bool eva_oled_render(void) {
         uint8_t layer = state.layer > 3 ? 0 : state.layer;
         // Fill only the selected plane; base is at the bottom.
         for (uint8_t y = 0; y < 24; ++y)
-            for (uint8_t x = 0; x < 32; ++x) oled_write_pixel(x, y, false);
+            for (uint8_t x = 0; x < 32; ++x) oled_write_pixel(x, 22 + y, false);
         for (uint8_t i = 0; i < 4; ++i)
             for (uint8_t y = 0; y < 9; ++y) {
                 uint8_t span = 2 + 3 * (y < 5 ? y : 8 - y);
                 for (uint8_t x = 0; x < 29; ++x) {
                     uint8_t distance = x > 14 ? x - 14 : 14 - x;
                     if (distance <= span)
-                        oled_write_pixel(1 + x, 14 - 4 * i + y,
+                        oled_write_pixel(1 + x, 36 - 4 * i + y,
                                          distance + 3 > span || i == layer);
                 }
             }
@@ -230,7 +236,7 @@ bool eva_oled_render(void) {
         render_modifiers();
     } else {
         render_luna(&state.pet);
-        render_history(0, 8);
+        render_history(0, 7);
     }
 #else
     icon_at(4, 4, eva_icons[EVA_LAYERS], false);

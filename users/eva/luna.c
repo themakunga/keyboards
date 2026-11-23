@@ -134,8 +134,13 @@ void render_luna(const eva_pet_state_t *pet) {
     bool jumping = pet->space || pet->jumps != last_jump;
     last_jump = pet->jumps;
     static const char PROGMEM blank[128] = {0};
-    oled_set_cursor(0, 3);
+#ifdef EVA_OLED_SPLIT_STATUS
+    const uint8_t row = 3;
+#else
+    const uint8_t row = 4;
+#endif
+    oled_set_cursor(0, row - 1);
     oled_write_raw_P(blank, sizeof(blank));
-    oled_set_cursor(0, jumping ? 3 : 4);
+    oled_set_cursor(0, jumping ? row - 1 : row);
     oled_write_raw_P(image, 96);
 }
