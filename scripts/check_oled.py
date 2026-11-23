@@ -36,7 +36,7 @@ for index, body in blocks:
     assert tuple(keys[42:44]) == presses[int(index)]
     if index == '0':
         assert keys[24] == 'KC_LCTL' and keys[36] == 'KC_LSFT' and keys[49] == 'KC_RSFT'
-        assert keys[50:54] == ['C(KC_S)', 'KC_LALT', 'MO(1)', 'KC_LGUI']
+        assert keys[50:54] == ['C(KC_S)', 'KC_LALT', 'KC_LGUI', 'MO(1)']
         assert keys[56] == 'MO(2)'
         assert keys[55] == 'TD(TD_SPC_ENT)'
     else:
@@ -44,6 +44,13 @@ for index, body in blocks:
         assert keys[54:56] == ['KC_ENT', 'KC_ENT']
 ns = {'svg': 'http://www.w3.org/2000/svg'}
 svg = ET.parse(repo / 'docs/eva01-layout.svg')
+for layer in range(3):
+    for index, action, label in [(52, 'KC_LGUI', 'Mac'), (53, 'MO(1)', 'L2')]:
+        key = action if layer == 0 else 'KC_TRNS'
+        title = f'QMK {layer}, posición {index}: {key}; acción {action}'
+        group = next(g for g in svg.findall('.//svg:g', ns)
+                     if g.find('svg:title', ns) is not None and g.find('svg:title', ns).text == title)
+        assert [t.text for t in group.findall('svg:text', ns)] == [label]
 for layer in (1, 2):
     for index in (54, 55):
         title = f'QMK {layer}, posición {index}: KC_ENT; acción KC_ENT'
@@ -71,6 +78,8 @@ assert len(luna_bytes) == 960
 assert hashlib.sha256(luna_bytes).hexdigest() == '42225ff829e5023d6fdcdc9d1ca82e4b06031510097ba23df79e2efc8965e543'
 assert '#define SPLIT_TRANSACTION_IDS_USER EVA_OLED_SYNC' in (root / 'config.h').read_text()
 assert 'VIA_ENABLE = no' in (keymap_root / 'rules.mk').read_text()
+assert '#define EVA_OLED_SPLIT_STATUS' in (keymap_root / 'config.h').read_text()
+assert 'EVA_OLED_SPLIT_STATUS' not in (repo / 'keyboards/corne/v2/keymaps/themakunga_eva02/config.h').read_text()
 
 known = {
     'KC_A': 4, 'KC_Z': 29, 'KC_1': 30, 'KC_0': 39, 'KC_ENT': 40, 'KC_ESC': 41,
@@ -90,6 +99,7 @@ header = r'''
 #define PROGMEM
 #define pgm_read_byte(p) (*(const unsigned char *)(p))
 #define pgm_read_word(p) (*(const uint16_t *)(p))
+#define strcpy_P strcpy
 #define EVA_OLED_SYNC 1
 #define MOD_MASK_GUI 0x88
 #define MOD_MASK_CTRL 0x11
@@ -108,6 +118,8 @@ uint32_t now, layer_state = 1, default_layer_state = 1;
 static uint8_t wpm;
 static uint32_t activity;
 static bool screen_on;
+#define TEST_WIDTH 32
+#define TEST_HEIGHT 128
 #define OLED_TIMEOUT 60000
 static uint8_t mods, weak_mods;
 static led_t leds;
@@ -116,11 +128,13 @@ void host_set_driver(host_driver_t *driver) { installed_driver = driver; }
 led_t host_keyboard_led_state(void) { return leds; }
 #ifdef EVA_RIGHT
 static bool master = false;
+static bool left = false;
 #else
 static bool master = true;
+static bool left = true;
 #endif
 bool is_keyboard_master(void) { return master; }
-bool is_keyboard_left(void) { return master; }
+bool is_keyboard_left(void) { return left; }
 uint8_t get_current_wpm(void) { return wpm; }
 uint32_t last_input_activity_elapsed(void) { return activity; }
 uint32_t last_led_activity_elapsed(void) { return activity; }
@@ -165,7 +179,7 @@ test = r'''
 static unsigned pixels, forwarded, mouse_calls;
 static report_keyboard_t forwarded_report;
 static uint8_t cursor_row, cursor_col;
-static bool canvas[128][32];
+static bool canvas[TEST_HEIGHT][TEST_WIDTH];
 void original_send(report_keyboard_t *report) { ++forwarded; forwarded_report = *report; }
 void original_mouse(void) { ++mouse_calls; }
 uint8_t original_leds(void) { return 2; }
@@ -177,10 +191,10 @@ void press(uint8_t key, uint8_t flags) {
     installed_driver->send_keyboard(&report);
 }
 void oled_set_cursor(uint8_t x, uint8_t y) {
-    assert(x < 5 && y < 16); cursor_row = y; cursor_col = x;
+    assert(x < TEST_WIDTH / 6 && y < TEST_HEIGHT / 8); cursor_row = y; cursor_col = x;
 }
 void oled_write_pixel(uint8_t x, uint8_t y, bool on) {
-    assert(x < 32 && y < 128); canvas[y][x] = on; ++pixels;
+    assert(x < TEST_WIDTH && y < TEST_HEIGHT); canvas[y][x] = on; ++pixels;
 }
 void oled_write_raw_P(const char *data, uint16_t size) {
     assert(cursor_col == 0 && size % 32 == 0 && cursor_row*8 + size/4 <= 128);
@@ -192,7 +206,7 @@ void oled_write_raw_P(const char *data, uint16_t size) {
 void oled_write_raw_byte(char data, uint16_t index) {
     assert(index < 512);
     for (uint8_t bit = 0; bit < 8; ++bit)
-        canvas[index / 32 * 8 + bit][index % 32] = !!((uint8_t)data & (1 << bit));
+        canvas[index / TEST_WIDTH * 8 + bit][index % TEST_WIDTH] = !!((uint8_t)data & (1 << bit));
 }
 static void expect_text(uint8_t row, const char *text, uint8_t left) {
     for (uint8_t x = 0; x < 32; ++x)
@@ -217,6 +231,38 @@ static void expect_frame(const char *image, uint8_t row) {
 #endif
 static void check_layout(void) {
     state.pet.awake = true;
+#ifdef EVA_OLED_SPLIT_STATUS
+    if (!left) {
+        strcpy(state.key[0], "Space"); strcpy(state.key[1], "Enter"); strcpy(state.key[2], "Q");
+        state.last_mods[0] = 0; state.last_mods[1] = 0; state.last_mods[2] = MOD_MASK_GUI;
+        eva_oled_render();
+        expect_text(8, "", 16); expect_text(9, "Space", 1);
+        expect_text(10, "", 16); expect_text(11, "Enter", 1);
+        expect_text(12, "M", 13); expect_text(13, "Q", 13);
+        for (uint8_t y = 0; y < 24; ++y)
+            for (uint8_t x = 0; x < 32; ++x) assert(!canvas[y][x]);
+        return;
+    }
+    const char *names[4][2] = {{"base", ""}, {"sym", "bol"}, {"func", "tions"}, {"opera", "tions"}}; // cspell:ignore tions
+    for (uint8_t sample = 0; sample < 32; ++sample) {
+        uint8_t mask = sample < 16 ? sample : 31 - sample;
+        state.layers = mask; state.layer = get_highest_layer(mask); eva_oled_render();
+        assert(screen_on);
+        for (uint8_t i = 0; i < 4; ++i) {
+            assert(canvas[21 - 4*i][15] == (i == state.layer));
+            assert(canvas[18 - 4*i][1] && canvas[18 - 4*i][29]);
+        }
+        for (uint8_t line = 0; line < 2; ++line) {
+            const char *name = names[state.layer][line];
+            expect_text(3 + line, name, (32 - 6 * strlen(name)) / 2);
+        }
+        for (uint8_t y = 0; y < 24; ++y)
+            assert(!canvas[y][0] && !canvas[y][30] && !canvas[y][31]);
+        master = false; eva_oled_render(); master = true;
+    }
+    state.pet.awake = false; eva_oled_render(); assert(!screen_on);
+    state.pet.awake = true; eva_oled_render(); assert(screen_on);
+#else
     const uint8_t digits[3][5] = {{2, 6, 2, 2, 7}, {6, 1, 2, 4, 7}, {6, 1, 2, 1, 6}};
     for (uint8_t layer = 0; layer < 3; ++layer) {
         state.layer = layer; eva_oled_render();
@@ -227,46 +273,74 @@ static void check_layout(void) {
             for (uint8_t x = 0; x < 3; ++x)
                 assert(canvas[8+y][24+x] == !!(digits[layer][y] & (1 << (2-x))));
     }
+#endif
     const uint8_t masks[] = {MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_CTRL, MOD_MASK_SHIFT};
     for (unsigned mods = 0; mods < 256; ++mods) {
         state.pet.mods = mods; eva_oled_render();
         for (uint8_t i = 0; i < 4; ++i) {
+#ifdef EVA_OLED_SPLIT_STATUS
+            uint8_t left = 16 * (i % 2), top = 48 + 17 * (i / 2);
+            const uint8_t size = 16;
+            for (uint8_t y = 1; y < 15; ++y)
+                for (uint8_t x = 1; x < 15; ++x)
+                    if ((x == 1 || x == 14) != (y == 1 || y == 14))
+                        assert(canvas[top+y][left+x] == !!(mods & masks[i]));
+#else
             uint8_t left = 18 * (i % 2), top = 60 + 20 * (i / 2);
-            for (uint8_t y = 0; y < 14; ++y) {
-                for (uint8_t x = 0; x < 14; ++x) {
-                    bool corner = ((y == 0 || y == 13) && (x < 2 || x > 11)) ||
-                                  ((y == 1 || y == 12) && (x == 0 || x == 13));
-                    bool border = y == 0 || y == 13 || x == 0 || x == 13 ||
-                                  ((y == 1 || y == 12) && (x == 1 || x == 12));
+            const uint8_t size = 14;
+#endif
+            for (uint8_t y = 0; y < size; ++y) {
+                for (uint8_t x = 0; x < size; ++x) {
+                    bool corner = ((y == 0 || y == size-1) && (x < 2 || x > size-3)) ||
+                                  ((y == 1 || y == size-2) && (x == 0 || x == size-1));
+                    bool border = y == 0 || y == size-1 || x == 0 || x == size-1 ||
+                                  ((y == 1 || y == size-2) && (x == 1 || x == size-2));
                     bool glyph = false;
+#ifdef EVA_OLED_SPLIT_STATUS
+                    if (x >= 2 && x < 14 && y >= 2 && y < 14)
+                        glyph = !!(eva_icons[i][y-1] & (1 << (14-x)));
+#else
                     if (x >= 3 && x < 11 && y >= 3 && y < 11)
                         glyph = !!(eva_icons[i][1 + ((y-3)*12+6)/8] &
                                    (1 << (12-((x-3)*12+6)/8)));
+#endif
                     glyph ^= !!(mods & masks[i]);
                     assert(canvas[top+y][left+x] == (!corner && (border || glyph)));
                 }
             }
         }
+#ifdef EVA_OLED_SPLIT_STATUS
+        for (uint8_t x = 0; x < 32; ++x) assert(!canvas[64][x]);
+#else
         for (uint8_t y = 60; y < 94; ++y)
             for (uint8_t x = 14; x < 18; ++x) assert(!canvas[y][x]);
         for (uint8_t y = 74; y < 80; ++y)
             for (uint8_t x = 0; x < 32; ++x) assert(!canvas[y][x]);
+#endif
     }
-    strcpy(state.key[0], "Enter"); strcpy(state.key[1], "Q");
-    state.last_mods[0] = 0; state.last_mods[1] = MOD_MASK_GUI;
+#ifndef EVA_OLED_SPLIT_STATUS
+    strcpy(state.key[1], "Enter"); strcpy(state.key[2], "Q");
+    state.last_mods[1] = 0; state.last_mods[2] = MOD_MASK_GUI;
     eva_oled_render();
     expect_text(12, "", 16); expect_text(13, "Enter", 1);
     expect_text(14, "M", 13); expect_text(15, "Q", 13);
-    state.last_mods[1] = 0; strcpy(state.key[1], "a"); eva_oled_render();
+    state.last_mods[2] = 0; strcpy(state.key[2], "a"); eva_oled_render();
     expect_text(14, "", 16); expect_text(15, "a", 13);
     assert(pixels);
+#endif
 }
 static bool preview(void) {
     if (!getenv("EVA_PREVIEW")) return false;
     puts("PREVIEW");
     state.pet.awake = true;
-    strcpy(state.key[0], "Enter"); strcpy(state.key[1], "a");
-    for (uint8_t i = 0; i < 3; ++i) {
+    strcpy(state.key[0], "Space"); strcpy(state.key[1], "Enter"); strcpy(state.key[2], "a");
+#ifdef EVA_OLED_SPLIT_STATUS
+    uint8_t count = 4;
+#else
+    uint8_t count = 3;
+#endif
+    for (uint8_t i = 0; i < count; ++i) {
+        state.layers = i == 3 ? 15 : 1 | (1 << i);
         state.layer = i; state.pet.mods = i ? MOD_MASK_GUI | MOD_MASK_SHIFT : 0;
         eva_oled_render(); fwrite(canvas, 1, sizeof(canvas), stdout);
     }
@@ -289,36 +363,37 @@ int main(void) {
     assert(installed_driver->keyboard_leds() == 2);
     installed_driver->send_mouse(); assert(mouse_calls == 1);
     matrix_scan_user();
-    now = 100; press(KC_A, 0); assert(!strcmp(state.key[1], "a"));
+    now = 100; press(KC_A, 0); assert(!strcmp(state.key[2], "a"));
     assert(forwarded == 2);
-    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "A") && !state.last_mods[1]);
+    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key[2], "A") && !state.last_mods[2]);
     leds.caps_lock = true;
-    press(KC_A, 0); assert(!strcmp(state.key[1], "A"));
-    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "a"));
+    press(KC_A, 0); assert(!strcmp(state.key[2], "A"));
+    press(KC_A, MOD_MASK_SHIFT); assert(!strcmp(state.key[2], "a"));
     leds.caps_lock = false;
-    press(KC_1 + 1, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "@"));
-    press(KC_LBRC, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "{"));
-    press(KC_COMM, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "<"));
-    press(KC_DOT, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], ">"));
-    press(KC_SLSH, MOD_MASK_SHIFT); assert(!strcmp(state.key[1], "?"));
-    press(KC_SPC, 0); assert(!strcmp(state.key[1], "Space"));
-    press(KC_ENT, 0); assert(!strcmp(state.key[1], "Enter") && !strcmp(state.key[0], "Space"));
-    press(KC_UP, 0); assert(!strcmp(state.key[1], "Up") && !strcmp(state.key[0], "Enter"));
+    press(KC_1 + 1, MOD_MASK_SHIFT); assert(!strcmp(state.key[2], "@"));
+    press(KC_LBRC, MOD_MASK_SHIFT); assert(!strcmp(state.key[2], "{"));
+    press(KC_COMM, MOD_MASK_SHIFT); assert(!strcmp(state.key[2], "<"));
+    press(KC_DOT, MOD_MASK_SHIFT); assert(!strcmp(state.key[2], ">"));
+    press(KC_SLSH, MOD_MASK_SHIFT); assert(!strcmp(state.key[2], "?"));
+    press(KC_SPC, 0); assert(!strcmp(state.key[2], "Space"));
+    press(KC_ENT, 0); assert(!strcmp(state.key[2], "Enter") && !strcmp(state.key[1], "Space"));
+    press(KC_UP, 0); assert(!strcmp(state.key[2], "Up") && !strcmp(state.key[1], "Enter"));
+    assert(!strcmp(state.key[0], "Space"));
     report_keyboard_t held = {.mods = MOD_MASK_CTRL, .keys = {KC_A}};
     installed_driver->send_keyboard(&held);
-    assert(!strcmp(state.key[1], "A") && state.last_mods[1] == MOD_MASK_CTRL);
+    assert(!strcmp(state.key[2], "A") && state.last_mods[2] == MOD_MASK_CTRL);
     held.mods = 0; installed_driver->send_keyboard(&held);
-    assert(!strcmp(state.key[1], "A") && state.last_mods[1] == MOD_MASK_CTRL);
+    assert(!strcmp(state.key[2], "A") && state.last_mods[2] == MOD_MASK_CTRL);
     held.keys[0] = 0; installed_driver->send_keyboard(&held);
     press(KC_A + ('Q'-'A'), MOD_MASK_GUI | MOD_MASK_CTRL);
-    assert(!strcmp(state.key[1], "Q") && state.last_mods[1] == (MOD_MASK_GUI | MOD_MASK_CTRL));
+    assert(!strcmp(state.key[2], "Q") && state.last_mods[2] == (MOD_MASK_GUI | MOD_MASK_CTRL));
     report_keyboard_t release = {0};
     installed_driver->send_keyboard(&release);
     release.mods = MOD_MASK_SHIFT;
     installed_driver->send_keyboard(&release);
-    assert(!strcmp(state.key[1], "Q") && state.last_mods[1] == (MOD_MASK_GUI | MOD_MASK_CTRL));
+    assert(!strcmp(state.key[2], "Q") && state.last_mods[2] == (MOD_MASK_GUI | MOD_MASK_CTRL));
     release.keys[0] = 1; installed_driver->send_keyboard(&release);
-    assert(!strcmp(state.key[1], "Q"));
+    assert(!strcmp(state.key[2], "Q"));
     assert(state.pet.jumps == 1 && !state.pet.space);
     report_keyboard_t space = {.keys = {KC_SPC}};
     installed_driver->send_keyboard(&space); assert(state.pet.space && state.pet.jumps == 2);
@@ -326,7 +401,7 @@ int main(void) {
     space.keys[0] = 0; installed_driver->send_keyboard(&space); assert(!state.pet.space);
     press(KC_A + ('Q'-'A'), MOD_MASK_GUI | MOD_MASK_CTRL);
     layer_state = 4; mods = MOD_MASK_CTRL; weak_mods = MOD_MASK_GUI; wpm = 41;
-    eva_oled_housekeeping(); assert(state.layer == 2);
+    eva_oled_housekeeping(); assert(state.layer == 2 && state.layers == 5);
     display_state_t sent; memcpy(&sent, sent_packet, sizeof(sent));
     assert(packet_size == sizeof(state));
     assert(sends == 1 && sent.pet.wpm == 41 && sent.pet.mods == (MOD_MASK_CTRL | MOD_MASK_GUI));
@@ -340,13 +415,15 @@ int main(void) {
     receiver(sizeof(saved), &saved, 0, NULL); assert(state.layer == 2);
     report_keyboard_t pair = {.keys = {KC_A, KC_1}};
     installed_driver->send_keyboard(&pair);
-    assert(!strcmp(state.key[0], "A") && !strcmp(state.key[1], "1"));
+    assert(!strcmp(state.key[1], "A") && !strcmp(state.key[2], "1"));
+    assert(!strcmp(state.key[0], "Q") && state.last_mods[0] == (MOD_MASK_GUI | MOD_MASK_CTRL));
     installed_driver->send_keyboard(&pair);
-    assert(!strcmp(state.key[0], "A") && !strcmp(state.key[1], "1"));
+    assert(!strcmp(state.key[1], "A") && !strcmp(state.key[2], "1"));
+    assert(!strcmp(state.key[0], "Q"));
 
     state.pet.awake = true;
     check_layout();
-    puts("OK master: final USB output, ordered two-key history, forwarding, shared layout and RPC");
+    puts("OK master: final USB output, ordered three-key history, forwarding, shared layout and RPC");
 }
 #else
 int main(void) {
@@ -355,11 +432,13 @@ int main(void) {
     eva_oled_init(); assert(receiver);
     matrix_scan_user(); assert(!installed_driver);
     display_state_t packet = {.pet = {.awake = true}, .layer = 2,
-                              .last_mods = {0, MOD_MASK_GUI}, .key = {"Enter", "Q"}};
+                              .layers = 5, .last_mods = {0, 0, MOD_MASK_GUI}, .key = {"Space", "Enter", "Q"}};
     receiver(1, &packet, 0, NULL); assert(!state.pet.awake);
-    packet.key[1][5] = 'x';
-    receiver(sizeof(packet), &packet, 0, NULL); assert(!state.pet.awake);
-    packet.key[1][5] = 0;
+    for (uint8_t i = 0; i < 3; ++i) {
+        packet.key[i][5] = 'x';
+        receiver(sizeof(packet), &packet, 0, NULL); assert(!state.pet.awake);
+        packet.key[i][5] = 0;
+    }
     receiver(sizeof(packet), &packet, 0, NULL); assert(!memcmp(&state, &packet, sizeof(state)));
     eva_oled_housekeeping(); assert(!sends && !memcmp(&state, &packet, sizeof(state)));
     check_layout();
@@ -381,9 +460,10 @@ int main(void) {
     now += 200; state.pet.space = true; eva_oled_render(); expect_frame(sit[0], 3);
     now += 200; eva_oled_render(); expect_frame(sit[1], 3);
     now += 200; state.pet.space = false; eva_oled_render(); expect_frame(sit[0], 4);
+    left = false;
     state.pet.awake = false; eva_oled_render(); assert(!screen_on);
     state.pet.awake = true; now += 200; eva_oled_render(); assert(screen_on);
-    puts("OK peripheral: complete state, identical layout, Luna frames, WPM, jumps and sleep");
+    puts("OK peripheral: complete state, physical-side layout, Luna frames, WPM, jumps and sleep");
 }
 #endif
 
@@ -395,16 +475,17 @@ with tempfile.TemporaryDirectory() as directory:
     (tmp / 'transactions.h').write_text(transactions)
     (tmp / 'progmem.h').write_text('#pragma once\n')
     (tmp / 'test.c').write_text(test)
-    for side in ('left', 'right'):
-        binary = tmp / side
+    for board, side in [('eva01', 'left'), ('eva01', 'right'), ('eva02', 'left'), ('eva02', 'right')]:
+        binary = tmp / f'{board}-{side}'
         subprocess.run([os.environ.get('CC', 'cc'), '-std=c11', '-Wall', '-Wextra', '-Werror',
                         '-DNO_ACTION_ONESHOT',
                         *(['-DEVA_RIGHT'] if side == 'right' else []),
+                        *(['-DEVA_OLED_SPLIT_STATUS'] if board == 'eva01' else []),
                         '-DQMK_KEYBOARD_H="mock.h"', '-I', str(tmp), '-I', str(root),
                         str(tmp / 'test.c'), '-o', str(binary)], check=True)
         result = subprocess.run([str(binary)], capture_output=True, env={k: v for k, v in os.environ.items() if k != 'EVA_PREVIEW'})
         assert result.returncode == 0, result.stderr.decode()
-        print(result.stdout.split(b'\n')[0].decode())
+        print(f'{board}: ' + result.stdout.split(b'\n')[0].decode())
         if os.environ.get('EVA_PREVIEW'):
             preview_result = subprocess.run([str(binary)], capture_output=True, check=True)
-            Path(os.environ['EVA_PREVIEW'] + '-' + side + '.raw').write_bytes(preview_result.stdout.split(b'\n', 1)[1])
+            Path(os.environ['EVA_PREVIEW'] + '-' + board + '-' + side + '.raw').write_bytes(preview_result.stdout.split(b'\n', 1)[1])

@@ -8,8 +8,8 @@
 // Final USB keyboard actions are transient display state, shared by both halves.
 typedef struct {
     eva_pet_state_t pet;
-    uint8_t layer, last_mods[2];
-    char key[2][6];
+    uint8_t layer, layers, last_mods[3];
+    char key[3][6];
 } display_state_t;
 static display_state_t state;
 _Static_assert(sizeof(state) <= 32, "Split RPC payload too large");
@@ -17,6 +17,7 @@ static uint32_t last_attempt;
 static host_driver_t display_driver;
 static void (*forward_keyboard)(report_keyboard_t *);
 static report_keyboard_t previous_report;
+static const uint8_t masks[] = {MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_CTRL, MOD_MASK_SHIFT};
 
 static void label(uint16_t keycode, char out[6]) {
     memset(out, 0, 6);
@@ -75,7 +76,9 @@ static void receive_state(uint8_t size, const void *data, uint8_t out_size, void
     (void)out;
     if (!is_keyboard_master() && size == sizeof(state)) {
         const display_state_t *incoming = data;
-        if (!incoming->key[0][5] && !incoming->key[1][5]) memcpy(&state, data, sizeof(state));
+        for (uint8_t i = 0; i < 3; ++i)
+            if (incoming->key[i][5]) return;
+        memcpy(&state, data, sizeof(state));
     }
 }
 
@@ -88,19 +91,19 @@ static void send_keyboard(report_keyboard_t *report) {
     for (uint8_t i = 0; i < KEYBOARD_REPORT_KEYS; ++i) {
         uint8_t keycode = report->keys[i];
         if (keycode < KC_A || keycode >= KC_LCTL || memchr(previous_report.keys, keycode, KEYBOARD_REPORT_KEYS)) continue;
-        memcpy(state.key[0], state.key[1], sizeof(state.key[0]));
-        state.last_mods[0] = state.last_mods[1];
-        label(keycode, state.key[1]);
+        memmove(state.key, state.key + 1, 2 * sizeof(state.key[0]));
+        memmove(state.last_mods, state.last_mods + 1, 2);
+        label(keycode, state.key[2]);
         bool shifted = report->mods & MOD_MASK_SHIFT;
         bool shortcut = report->mods & (MOD_MASK_GUI | MOD_MASK_ALT | MOD_MASK_CTRL);
-        state.last_mods[1] = shortcut ? report->mods : 0;
+        state.last_mods[2] = shortcut ? report->mods : 0;
         if (keycode >= KC_A && keycode <= KC_Z) {
-            if (!shortcut && !(shifted ^ host_keyboard_led_state().caps_lock)) state.key[1][0] += 'a' - 'A';
+            if (!shortcut && !(shifted ^ host_keyboard_led_state().caps_lock)) state.key[2][0] += 'a' - 'A';
         } else {
             const char plain[] = "1234567890-=[]\\;'/.,`";
             const char upper[] = "!@#$%^&*()_+{}|:\"?><~";
-            const char *match = strchr(plain, state.key[1][0]);
-            if (shifted && state.key[1][1] == '\0' && match) state.key[1][0] = upper[match - plain];
+            const char *match = strchr(plain, state.key[2][0]);
+            if (shifted && state.key[2][1] == '\0' && match) state.key[2][0] = upper[match - plain];
         }
         if (keycode == KC_SPC) ++state.pet.jumps;
     }
@@ -120,6 +123,7 @@ void matrix_scan_user(void) {
 void eva_oled_housekeeping(void) {
     if (!is_keyboard_master()) return;
     state.layer = get_highest_layer(layer_state | default_layer_state);
+    state.layers = layer_state | default_layer_state;
     state.pet.mods = get_mods() | get_weak_mods();
 #ifndef NO_ACTION_ONESHOT
     state.pet.mods |= get_oneshot_mods();
@@ -148,11 +152,50 @@ static void text_at(uint8_t row, const char *text) {
     }
 }
 
+#ifndef EVA_OLED_SPLIT_STATUS
 static void icon_at(uint8_t left, uint8_t top, const uint16_t icon[EVA_ICON_SIZE], bool inverted) {
     for (uint8_t y = 0; y < EVA_ICON_SIZE; ++y) {
         uint16_t row = pgm_read_word(&icon[y]);
         for (uint8_t x = 0; x < EVA_ICON_SIZE; ++x)
             oled_write_pixel(left + x, top + y, !!(row & (1 << (EVA_ICON_SIZE - 1 - x))) ^ inverted);
+    }
+}
+#endif
+
+static void render_modifiers(void) {
+    for (uint8_t i = 0; i < 4; ++i) {
+#ifdef EVA_OLED_SPLIT_STATUS
+        uint8_t left = 16 * (i % 2), top = 48 + 17 * (i / 2);
+        const uint8_t size = 16, glyph_size = 12, padding = 2;
+#else
+        uint8_t left = 18 * (i % 2), top = 60 + 20 * (i / 2);
+        const uint8_t size = 14, glyph_size = 8, padding = 3;
+#endif
+        for (uint8_t y = 0; y < size; ++y) {
+            bool glyph_row = y >= padding && y < padding + glyph_size;
+            uint16_t row = glyph_row ? pgm_read_word(&eva_icons[i][1 + ((y - padding) * 12 + glyph_size / 2) / glyph_size]) : 0;
+            uint8_t inset = y == 0 || y == size - 1 ? 2 : y == 1 || y == size - 2 ? 1 : 0;
+            for (uint8_t x = 0; x < size; ++x) {
+                bool glyph = glyph_row && x >= padding && x < padding + glyph_size &&
+                             (row & (1 << (12 - ((x - padding) * 12 + glyph_size / 2) / glyph_size)));
+                bool on = glyph ^ !!(state.pet.mods & masks[i]);
+                if (x < inset || x >= size - inset) on = false;
+                else if (y == 0 || y == size - 1 || x == inset || x == size - 1 - inset) on = true;
+                oled_write_pixel(left + x, top + y, on);
+            }
+        }
+    }
+}
+
+static void render_history(uint8_t first, uint8_t row) {
+    for (uint8_t key = first; key < 3; ++key) {
+        char chord[5] = {0};
+        uint8_t length = 0;
+        for (uint8_t i = 0; i < 4; ++i)
+            if (state.last_mods[key] & masks[i]) chord[length++] = "MACS"[i];
+        text_at(row, chord);
+        text_at(row + 1, state.key[key]);
+        row += 2;
     }
 }
 
@@ -161,38 +204,44 @@ bool eva_oled_render(void) {
         oled_off();
         return false;
     }
-    render_luna(&state.pet);
+#ifdef EVA_OLED_SPLIT_STATUS
+    if (is_keyboard_left()) {
+        oled_on();
+        uint8_t layer = state.layer > 3 ? 0 : state.layer;
+        // Fill only the selected plane; base is at the bottom.
+        for (uint8_t y = 0; y < 24; ++y)
+            for (uint8_t x = 0; x < 32; ++x) oled_write_pixel(x, y, false);
+        for (uint8_t i = 0; i < 4; ++i)
+            for (uint8_t y = 0; y < 9; ++y) {
+                uint8_t span = 2 + 3 * (y < 5 ? y : 8 - y);
+                for (uint8_t x = 0; x < 29; ++x) {
+                    uint8_t distance = x > 14 ? x - 14 : 14 - x;
+                    if (distance <= span)
+                        oled_write_pixel(1 + x, 14 - 4 * i + y,
+                                         distance + 3 > span || i == layer);
+                }
+            }
+        static const char PROGMEM names[4][2][6] = {{"base", ""}, {"sym", "bol"}, {"func", "tions"}, {"opera", "tions"}}; // cspell:ignore tions
+        for (uint8_t line = 0; line < 2; ++line) {
+            char name[6];
+            strcpy_P(name, names[layer][line]);
+            text_at(3 + line, name);
+        }
+        render_modifiers();
+    } else {
+        render_luna(&state.pet);
+        render_history(0, 8);
+    }
+#else
     icon_at(4, 4, eva_icons[EVA_LAYERS], false);
-    // User-facing layers are 1..3; the number keeps the same glyph unambiguous.
     static const uint8_t PROGMEM numbers[3][5] = {{2, 6, 2, 2, 7}, {6, 1, 2, 4, 7}, {6, 1, 2, 1, 6}};
     uint8_t layer = state.layer > 2 ? 2 : state.layer;
     for (uint8_t y = 0; y < 5; ++y)
         for (uint8_t x = 0; x < 3; ++x)
             oled_write_pixel(24 + x, 8 + y, pgm_read_byte(&numbers[layer][y]) & (1 << (2 - x)));
-    const uint8_t masks[] = {MOD_MASK_GUI, MOD_MASK_ALT, MOD_MASK_CTRL, MOD_MASK_SHIFT};
-    for (uint8_t i = 0; i < 4; ++i) {
-        uint8_t left = 18 * (i % 2), top = 60 + 20 * (i / 2);
-        for (uint8_t y = 0; y < EVA_ICON_SIZE; ++y) {
-            bool glyph_row = y >= 3 && y < 11;
-            uint16_t row = glyph_row ? pgm_read_word(&eva_icons[i][1 + ((y - 3) * 12 + 6) / 8]) : 0;
-            uint8_t inset = y == 0 || y == 13 ? 2 : y == 1 || y == 12 ? 1 : 0;
-            for (uint8_t x = 0; x < EVA_ICON_SIZE; ++x) {
-                bool glyph = glyph_row && x >= 3 && x < 11 &&
-                             (row & (1 << (12 - ((x - 3) * 12 + 6) / 8)));
-                bool on = glyph ^ !!(state.pet.mods & masks[i]);
-                if (x < inset || x >= EVA_ICON_SIZE - inset) on = false;
-                else if (y == 0 || y == 13 || x == inset || x == 13 - inset) on = true;
-                oled_write_pixel(left + x, top + y, on);
-            }
-        }
-    }
-    for (uint8_t key = 0; key < 2; ++key) {
-        char chord[5] = {0};
-        uint8_t length = 0;
-        for (uint8_t i = 0; i < 4; ++i)
-            if (state.last_mods[key] & masks[i]) chord[length++] = "MACS"[i];
-        text_at(12 + 2 * key, chord);
-        text_at(13 + 2 * key, state.key[key]);
-    }
+    render_luna(&state.pet);
+    render_modifiers();
+    render_history(1, 12);
+#endif
     return false;
 }

@@ -21,12 +21,14 @@ un [espacio de usuario externo](https://docs.qmk.fm/newbs_external_userspace).
 | Corne     | v2      | `corne/v2` | `themakunga_eva02` | [Hardware, layout and OLED](keyboards/corne/v2/keymaps/themakunga_eva02/readme.md) |
 
 `users/eva/` contains the shared OLED code and font. Each keyboard builds one firmware image for
-both halves. Both portrait displays show the current layer, Luna, a centered 2 × 2 bordered
-Command/Option/Control/Shift grid, then the last two transmitted keyboard outputs. Held modifiers
-invert their icons; shortcut flags remain attached to each output. Luna uses the original
+both halves. EVA01's portrait left display shows the layer name, a stack highlighting only the
+selected layer and a bordered Command/Option/Control/Shift grid. Its portrait right display shows
+Luna and the last three transmitted keyboard outputs. EVA02 keeps its full portrait layout on both
+sides: layer, Luna, modifiers and two outputs. Held modifiers invert their icons; shortcut flags
+remain attached to each output. Luna uses the original
 [HellSingCoder sprites](https://github.com/HellSingCoder/qmk_firmware/tree/33d7fa1180d232dcdb024c68a8f4629dced32afb/keyboards/sofle/keymaps/helltm).
 The complete display state is synchronized over the split link. USB stays on the left during normal
-use. Flash both halves with the same new image; the previous side-specific pair is incompatible.
+use. Flash both halves with the same new image; previous display-state formats are incompatible.
 
 Hardware definitions are grouped by keyboard family and version; personal keymaps live beneath
 `keymaps/`:
@@ -50,8 +52,8 @@ pulsadores de los codificadores. Las teclas atenuadas heredan la acción de la c
 círculos representan los pulsadores; los giros están detallados en la
 [guía de eva01](keyboards/sofle/v2/keymaps/themakunga_eva01/readme.md#capas-y-controles).
 
-- **Base (QMK 0):** QWERTY, Ctrl en la posición de bloqueo de mayúsculas y **Ctrl+S** en la esquina
-  inferior izquierda. **Mac** envía Command y está entre **L2** y Espacio.
+- **Base (QMK 0):** QWERTY, Ctrl in the Caps Lock position and **Ctrl+S** in the lower-left corner.
+  **Mac** sends Command and sits between Alt and **L2**, followed by Space.
 - **L2 · Symbols (QMK 1):** hold **L2** (`MO(1)`) for symbols. Both inner Space thumb keys send
   Enter.
 - **L3 · Funciones y multimedia (QMK 2):** mantener **L3** (`MO(2)`) activa F1–F12, controles

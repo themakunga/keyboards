@@ -218,13 +218,13 @@
 <rect x="192" y="430" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="221" y="464.25" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Alt</text>
 </g>
-<g><title>QMK 0, posición 52: MO(1); acción MO(1)</title>
+<g><title>QMK 0, posición 52: KC_LGUI; acción KC_LGUI</title>
 <rect x="256" y="431.6" width="58" height="58" rx="7" fill="#292F46" stroke="#BB9AF7" stroke-width="1.5"/>
-<text x="285" y="465.85" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">L2</text>
+<text x="285" y="465.85" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Mac</text>
 </g>
-<g><title>QMK 0, posición 53: KC_LGUI; acción KC_LGUI</title>
+<g><title>QMK 0, posición 53: MO(1); acción MO(1)</title>
 <rect x="320" y="438" width="58" height="58" rx="7" fill="#292F46" stroke="#BB9AF7" stroke-width="1.5"/>
-<text x="349" y="472.25" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">Mac</text>
+<text x="349" y="472.25" font-size="15" fill="#E1E7FF" text-anchor="middle" font-weight="normal">L2</text>
 </g>
 <g><title>QMK 0, posición 54: KC_SPC; acción KC_SPC</title>
 <rect x="416" y="438" width="58" height="90" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
@@ -465,13 +465,13 @@
 <rect x="192" y="900" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="221" y="934.25" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Alt</text>
 </g>
-<g><title>QMK 1, posición 52: KC_TRNS; acción MO(1)</title>
+<g><title>QMK 1, posición 52: KC_TRNS; acción KC_LGUI</title>
 <rect x="256" y="901.6" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="285" y="935.85" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">L2</text>
+<text x="285" y="935.85" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Mac</text>
 </g>
-<g><title>QMK 1, posición 53: KC_TRNS; acción KC_LGUI</title>
+<g><title>QMK 1, posición 53: KC_TRNS; acción MO(1)</title>
 <rect x="320" y="908" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="349" y="942.25" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Mac</text>
+<text x="349" y="942.25" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">L2</text>
 </g>
 <g><title>QMK 1, posición 54: KC_ENT; acción KC_ENT</title>
 <rect x="416" y="908" width="58" height="90" rx="7" fill="#292F46" stroke="#7DCFFF" stroke-width="1.5"/>
@@ -720,13 +720,13 @@
 <rect x="192" y="1370" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
 <text x="221" y="1404.25" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Alt</text>
 </g>
-<g><title>QMK 2, posición 52: KC_TRNS; acción MO(1)</title>
+<g><title>QMK 2, posición 52: KC_TRNS; acción KC_LGUI</title>
 <rect x="256" y="1371.6" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="285" y="1405.85" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">L2</text>
+<text x="285" y="1405.85" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Mac</text>
 </g>
-<g><title>QMK 2, posición 53: KC_TRNS; acción KC_LGUI</title>
+<g><title>QMK 2, posición 53: KC_TRNS; acción MO(1)</title>
 <rect x="320" y="1378" width="58" height="58" rx="7" fill="#24283B" stroke="#414868" stroke-width="1.5"/>
-<text x="349" y="1412.25" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">Mac</text>
+<text x="349" y="1412.25" font-size="15" fill="#8B93B4" text-anchor="middle" font-weight="normal">L2</text>
 </g>
 <g><title>QMK 2, posición 54: KC_ENT; acción KC_ENT</title>
 <rect x="416" y="1378" width="58" height="90" rx="7" fill="#292F46" stroke="#9ECE6A" stroke-width="1.5"/>

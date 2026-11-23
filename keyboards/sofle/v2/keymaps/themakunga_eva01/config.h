@@ -2,6 +2,7 @@
 
 // Standard Sofle RGB with Pro Micro ATmega32U4, USB on the left half.
 #define MASTER_LEFT
+#define EVA_OLED_SPLIT_STATUS
 
 // Initial cursor step per encoder detent; tune on the physical keyboard.
 #define MOUSEKEY_MOVE_DELTA 16  // ponytail: tune up/down per detent feel
