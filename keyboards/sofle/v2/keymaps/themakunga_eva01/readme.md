@@ -45,10 +45,9 @@ heredan la acción base. Cada capa se muestra activada por separado; si mantiene
 QMK resuelve primero L3, después L2 y finalmente la base. Los círculos representan los pulsadores de
 los codificadores.
 
-Utiliza la distribución **US** en el sistema operativo. La base es QWERTY con Ctrl en la posición de
-bloqueo de mayúsculas. La esquina inferior izquierda envía **Ctrl+S**; Ctrl sigue disponible en la
-fila de A. En los pulgares izquierdos, **L2** está entre Alt y **Mac**; Mac envía Command
-(`KC_LGUI`).
+Use the **US** keyboard layout in the operating system. The base is QWERTY with Ctrl in the Caps
+Lock position. The lower-left corner sends **Ctrl+S**; Ctrl remains available on the A row. The left
+thumb order is **Ctrl+S · Alt · Mac · L2 · Space**; Mac sends Command (`KC_LGUI`).
 
 Mantén **L2** (`MO(1)`, capa QMK 1) para símbolos y **L3** (`MO(2)`, capa QMK 2) para funciones,
 multimedia y RGB. Al soltar la tecla vuelves a la capa anterior. El pulgar derecho usa una secuencia
@@ -71,31 +70,37 @@ violeta 191/255. La configuración guardada en EEPROM puede reemplazar los valor
 
 ## OLED and animation
 
-Both halves use the same 270-degree portrait layout (32 × 128), from top to bottom:
+The left display uses 270-degree portrait orientation (32 × 128). A compact stack of four
+overlapping 29-pixel-wide planes represents the layers from bottom to top. Only the selected layer
+is filled; Base remains outlined while another layer is selected. The name appears below: `base`,
+`symbol`, `functions` or `operations`, split over two centered lines when necessary. The 2 × 2
+modifier grid shows Command/Option above Control/Shift, with 12 × 12 symbols inside rounded 16 × 16
+cells and one blank pixel between rows. A clear inner margin separates each symbol from its border.
+Held modifiers invert their icons.
 
-1. The Nerd Font layers glyph and current layer number (1/2/3).
-2. Luna, using the original ten 32 × 24 frames by HellSingCoder.
-3. A centered 2 × 2 grid: Command/Option above Control/Shift. Every icon has a border and spacing;
-   held modifiers invert the icon interior.
-4. The last two transmitted keyboard outputs, oldest above newest, with pixel-centered labels.
-   Shortcut flags (`M`, `A`, `C`, `S`) stay attached to the corresponding output.
+The right display uses 270-degree portrait orientation (32 × 128). It shows Luna using the original
+ten 32 × 24 frames by HellSingCoder, followed by the last **three** transmitted keyboard outputs,
+oldest above newest. Shortcut flags (`M`, `A`, `C`, `S`) stay attached to their output.
 
-![Shared OLED framebuffer on both halves, layers 1/2/3](../../../../../docs/eva-oled-preview.png)
+The current keymap still defines only `base`, `symbol` and `functions`; the `operations` display
+state is prepared, but its key assignments and activation are pending a decision.
+
+![EVA01 OLED framebuffers: four left display states and the right display](../../../../../docs/eva01-oled-preview.png)
 
 The USB master observes final QMK 6-key reports, including tap dance, Shift overrides and arrow
-remaps. Releases and modifier/layer-only actions preserve both history entries. US Shift and Caps
-Lock affect labels; host input methods, dead keys and text transformations remain outside the
+remaps. Releases and modifier/layer-only actions preserve all three history entries. US Shift and
+Caps Lock affect labels; host input methods, dead keys and text transformations remain outside the
 keyboard's view. Mouse, RGB and consumer/media reports do not replace the history.
 
 Luna sits at up to 10 WPM, walks at 11–40 and runs above 40. Control makes it sneak, Caps Lock makes
 it bark (with priority over Control), and Space makes it jump. Short Space taps survive release;
 held Space keeps the dog raised. Luna animates every 200 ms and both displays sleep after 60 seconds
-of input/LED inactivity. A 21-byte RPC packet synchronizes layer, modifiers, both outputs and Luna
-state, with attempts limited to once per 50 ms. See
+of input/LED inactivity. A 29-byte RPC packet synchronizes active layers, modifiers, three outputs
+and Luna state, with attempts limited to once per 50 ms. See
 [asset provenance and licenses](../../../../../users/eva/ASSETS.md).
 
 Both halves use the same firmware image. Keep USB on the left for normal use and update both halves
-together; the old side-specific RPC state is incompatible. Verify portrait orientation and split
+together; previous RPC state formats are incompatible. Verify both display orientations and split
 behavior on physical hardware.
 
 ## Comprobaciones locales
@@ -108,7 +113,7 @@ python3 scripts/check_oled.py
 
 Python 3 and a C compiler are required. The check verifies key and encoder assignments and compiles
 the actual OLED module with local substitutes. It covers final USB-report forwarding, characters and
-shortcuts, all modifier combinations, layer changes, RPC retries, portrait pixel bounds and all Luna
+shortcuts, all modifier combinations, layer changes, RPC retries, both display bounds and all Luna
 states. It compiles both master/peripheral render paths and checks sleep and short/held Space jumps.
 
 These checks do not validate physical pins, encoder direction, OLED orientation, actual brightness

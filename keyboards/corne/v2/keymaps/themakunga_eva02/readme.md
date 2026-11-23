@@ -77,12 +77,12 @@ keyboard's view. Mouse, RGB and consumer/media reports do not replace the histor
 Luna sits at up to 10 WPM, walks at 11–40 and runs above 40. Control makes it sneak, Caps Lock makes
 it bark (with priority over Control), and Space makes it jump. Short Space taps survive release;
 held Space keeps the dog raised. Luna animates every 200 ms and both displays sleep after 60 seconds
-of input/LED inactivity. A 21-byte RPC packet synchronizes layer, modifiers, both outputs and Luna
-state, with attempts limited to once per 50 ms. See
-[asset provenance and licenses](../../../../../users/eva/ASSETS.md).
+of input/LED inactivity. A 29-byte RPC packet synchronizes active layers, modifiers, three outputs
+and Luna state, with attempts limited to once per 50 ms; this layout displays only the newest two
+outputs. See [asset provenance and licenses](../../../../../users/eva/ASSETS.md).
 
 Both halves use the same firmware image. Keep USB on the left for normal use and update both halves
-together; the old side-specific RPC state is incompatible. Verify portrait orientation and split
+together; previous RPC state formats are incompatible. Verify portrait orientation and split
 behavior on physical hardware.
 
 ## Compilación

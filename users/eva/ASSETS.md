@@ -30,10 +30,14 @@ For each glyph, ImageMagick renders the installed font at 256 points, trims the 
 inside 12 × 12 pixels, centers it in a 14 × 14 cell and thresholds it at 45 percent. Each C row
 stores the leftmost pixel in bit 13. No font installation is required to build the firmware.
 
-Modifier cells have 14 × 14 rounded outlines with a two-pixel corner inset. The centered 2 × 2 grid
-leaves four blank pixels between columns and six between rows; active fills stay inside the rounded
-outline. Modifiers are sampled into centered 8 × 8 symbols, leaving two pixels of interior padding
-between each symbol and its outline. The original source bitmaps are unchanged.
+Modifier cells have rounded outlines with a two-pixel corner inset. EVA01 uses the original 12 × 12
+source symbols inside 16 × 16 cells in a portrait 2 × 2 grid, with one blank pixel between rows. A
+one-pixel inner margin keeps each symbol separate from its border in both modifier states. EVA02
+retains 14 × 14 cells and sampled 8 × 8 symbols, with four blank pixels between columns and six
+between rows. Active fills stay inside the rounded outlines. The original source bitmaps are
+unchanged. EVA01 replaces the static layers glyph with four overlapping 29-pixel-wide procedural
+planes, offset vertically by four pixels. The compact stack fills only the selected layer, leaving
+Base outlined when another layer is selected.
 
 ## Luna keyboard pet
 
@@ -44,6 +48,7 @@ Copyright 2021 HellSingCoder, GPL-2.0-or-later; the source notice is preserved a
 is in [LICENSE](LICENSE).
 
 Adaptations: a standalone C renderer, portrait centering, a cleared jump region, explicit timeout,
-and complete display state sent from the USB master over QMK RPC. Both halves render the same layer,
-Luna, bordered modifier grid and two-key output history. No artwork was rescaled or redrawn. The
-former monitor animation is no longer built. Historical Bongo Cat license notices are retained.
+and complete display state sent from the USB master over QMK RPC. EVA01 uses a portrait left status
+display and portrait right Luna/three-output history. EVA02 repeats its full portrait layout with
+two outputs on both sides. No Luna artwork was rescaled or redrawn. The former monitor animation is
+no longer built. Historical Bongo Cat license notices are retained.
