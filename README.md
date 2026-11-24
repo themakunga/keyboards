@@ -1,5 +1,7 @@
 # Keyboards
 
+![C](https://img.shields.io/badge/C-A8B9CC?style=flat-square&logo=c&logoColor=white)
+
 [![Checks](https://github.com/themakunga/keyboards/actions/workflows/checks.yaml/badge.svg)](https://github.com/themakunga/keyboards/actions/workflows/checks.yaml)
 [![Firmware](https://github.com/themakunga/keyboards/actions/workflows/firmware.yaml/badge.svg)](https://github.com/themakunga/keyboards/actions/workflows/firmware.yaml)
 [![Release](https://img.shields.io/github/v/release/themakunga/keyboards)](https://github.com/themakunga/keyboards/releases)
@@ -218,3 +220,16 @@ after all uploads finish. Download the matching keyboard image from
 Las promociones simultáneas se ejecutan en serie. Repetir una ejecución para una revisión ya
 etiquetada reutiliza su versión: permite completar un borrador pendiente y conserva intacta una
 versión publicada. El flujo no publica cambios en `main` ni graba firmware en el teclado.
+
+## Repository reference
+
+| Path                       | Purpose                                  |
+| -------------------------- | ---------------------------------------- |
+| [`keyboards/`](keyboards/) | QMK keyboard definitions and keymaps     |
+| [`users/`](users/)         | Shared user or application configuration |
+| [`qmk.json`](qmk.json)     | QMK userspace build targets              |
+| [`Makefile`](Makefile)     | Documented build and validation targets  |
+| [`docs/`](docs/)           | Usage and development guides             |
+
+The default branch is `main`. Use the tracked manifests and scripts above when preparing changes;
+keep local credentials and generated files out of commits.
