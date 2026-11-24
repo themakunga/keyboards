@@ -214,18 +214,18 @@ bool eva_oled_render(void) {
     if (is_keyboard_left()) {
         oled_on();
         uint8_t layer = state.layer > 3 ? 0 : state.layer;
-        // Fill only the selected plane; base is at the bottom.
+        // Composite before writing so unchanged planes cannot starve later dirty blocks.
         for (uint8_t y = 0; y < 24; ++y)
-            for (uint8_t x = 0; x < 32; ++x) oled_write_pixel(x, 22 + y, false);
-        for (uint8_t i = 0; i < 4; ++i)
-            for (uint8_t y = 0; y < 9; ++y) {
-                uint8_t span = 2 + 3 * (y < 5 ? y : 8 - y);
-                for (uint8_t x = 0; x < 29; ++x) {
-                    uint8_t distance = x > 14 ? x - 14 : 14 - x;
-                    if (distance <= span)
-                        oled_write_pixel(1 + x, 36 - 4 * i + y,
-                                         distance + 3 > span || i == layer);
+            for (uint8_t x = 0; x < 32; ++x) {
+                bool on = false;
+                uint8_t distance = x > 15 ? x - 15 : 15 - x;
+                for (uint8_t i = 0; i < 4; ++i) {
+                    int8_t plane_y = y - 14 + 4 * i;
+                    if (plane_y < 0 || plane_y >= 9) continue;
+                    uint8_t span = 2 + 3 * (plane_y < 5 ? plane_y : 8 - plane_y);
+                    if (distance <= span) on = distance + 3 > span || i == layer;
                 }
+                oled_write_pixel(x, 22 + y, on);
             }
         static const char PROGMEM names[4][2][6] = {{"base", ""}, {"sym", "bol"}, {"func", "tions"}, {"opera", "tions"}}; // cspell:ignore tions
         for (uint8_t line = 0; line < 2; ++line) {

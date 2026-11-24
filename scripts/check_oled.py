@@ -180,6 +180,7 @@ static unsigned pixels, forwarded, mouse_calls;
 static report_keyboard_t forwarded_report;
 static uint8_t cursor_row, cursor_col;
 static bool canvas[TEST_HEIGHT][TEST_WIDTH];
+static uint16_t dirty_blocks;
 void original_send(report_keyboard_t *report) { ++forwarded; forwarded_report = *report; }
 void original_mouse(void) { ++mouse_calls; }
 uint8_t original_leds(void) { return 2; }
@@ -194,19 +195,53 @@ void oled_set_cursor(uint8_t x, uint8_t y) {
     assert(x < TEST_WIDTH / 6 && y < TEST_HEIGHT / 8); cursor_row = y; cursor_col = x;
 }
 void oled_write_pixel(uint8_t x, uint8_t y, bool on) {
-    assert(x < TEST_WIDTH && y < TEST_HEIGHT); canvas[y][x] = on; ++pixels;
+    assert(x < TEST_WIDTH && y < TEST_HEIGHT);
+    if (canvas[y][x] != on) dirty_blocks |= 1u << (y / 8);
+    canvas[y][x] = on; ++pixels;
 }
 void oled_write_raw_P(const char *data, uint16_t size) {
     assert(cursor_col == 0 && size % 32 == 0 && cursor_row*8 + size/4 <= 128);
     for (unsigned y = 0; y < size/4; ++y)
         for (unsigned x = 0; x < 32; ++x)
-            canvas[cursor_row*8+y][x] = ((uint8_t)data[y/8*32+x] >> (y%8)) & 1;
+            oled_write_pixel(x, cursor_row*8+y, ((uint8_t)data[y/8*32+x] >> (y%8)) & 1);
 }
 
 void oled_write_raw_byte(char data, uint16_t index) {
     assert(index < 512);
     for (uint8_t bit = 0; bit < 8; ++bit)
-        canvas[index / TEST_WIDTH * 8 + bit][index % TEST_WIDTH] = !!((uint8_t)data & (1 << bit));
+        oled_write_pixel(index % TEST_WIDTH, index / TEST_WIDTH * 8 + bit, (uint8_t)data & (1 << bit));
+}
+static void check_display_flush(void) {
+    // Stress QMK's lowest-first, one-block service with a busy 100 ms scan loop.
+    bool display[128][32];
+    memset(canvas, 0, sizeof(canvas));
+    memset(display, 1, sizeof(display));
+    dirty_blocks = UINT16_MAX;
+    state.pet = (eva_pet_state_t){.awake = true};
+    state.layer = 0; state.layers = 1;
+    strcpy(state.key[0], "Space"); strcpy(state.key[1], "Enter"); strcpy(state.key[2], "a");
+    memset(state.last_mods, 0, sizeof(state.last_mods));
+    for (uint8_t tick = 0; tick < 64; ++tick) {
+        now += 100;
+        eva_oled_render();
+        if (dirty_blocks) {
+            uint8_t block = 0;
+            while (!(dirty_blocks & (1u << block))) ++block;
+            memcpy(display[block*8], canvas[block*8], 8 * 32 * sizeof(bool));
+            dirty_blocks &= ~(1u << block);
+        }
+    }
+    unsigned missing = 0;
+    for (uint8_t y = 0; y < 128; ++y) {
+#ifdef EVA_OLED_SPLIT_STATUS
+        if (!left && y >= 16 && y < 48) continue;
+#else
+        if (y >= 24 && y < 56) continue;
+#endif
+        for (uint8_t x = 0; x < 32; ++x) missing += display[y][x] != canvas[y][x];
+    }
+    if (missing) fprintf(stderr, "%u static pixels never reach the OLED; dirty mask %04x\n", missing, dirty_blocks);
+    assert(!missing);
 }
 static void expect_text(uint8_t row, const char *text, uint8_t left) {
     for (uint8_t x = 0; x < 32; ++x)
@@ -451,6 +486,7 @@ int main(void) {
 
     state.pet.awake = true;
     check_layout();
+    check_display_flush();
     puts("OK master: final USB output, ordered three-key history, forwarding, shared layout and RPC");
 }
 #else
@@ -491,6 +527,7 @@ int main(void) {
     left = false;
     state.pet.awake = false; eva_oled_render(); assert(!screen_on);
     state.pet.awake = true; now += 200; eva_oled_render(); assert(screen_on);
+    check_display_flush();
     puts("OK peripheral: complete state, physical-side layout, Luna frames, WPM, jumps and sleep");
 }
 #endif

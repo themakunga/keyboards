@@ -133,14 +133,17 @@ void render_luna(const eva_pet_state_t *pet) {
     // Keep short Space taps visible even when press/release precede the next RPC or frame.
     bool jumping = pet->space || pet->jumps != last_jump;
     last_jump = pet->jumps;
-    static const char PROGMEM blank[128] = {0};
 #ifdef EVA_OLED_SPLIT_STATUS
     const uint8_t row = 3;
 #else
     const uint8_t row = 4;
 #endif
-    oled_set_cursor(0, row - 1);
-    oled_write_raw_P(blank, sizeof(blank));
-    oled_set_cursor(0, jumping ? row - 1 : row);
-    oled_write_raw_P(image, 96);
+    // Write final bytes directly so erasing a frame cannot starve the history below it.
+    for (uint8_t page = 0; page < 4; ++page) {
+        uint8_t sprite_page = jumping ? page : page - 1;
+        for (uint8_t x = 0; x < 32; ++x) {
+            uint8_t data = sprite_page < 3 ? pgm_read_byte(&image[sprite_page * 32 + x]) : 0;
+            oled_write_raw_byte(data, (row - 1 + page) * 32 + x);
+        }
+    }
 }

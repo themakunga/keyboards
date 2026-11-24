@@ -119,6 +119,8 @@ Python 3 and a C compiler are required. The check verifies key and encoder assig
 the actual OLED module with local substitutes. It covers final USB-report forwarding, characters and
 shortcuts, all modifier combinations, layer changes, RPC retries, both display bounds and all Luna
 states. It compiles both master/peripheral render paths and checks sleep and short/held Space jumps.
+It also simulates QMK's lowest-first dirty-block updates under a busy scan loop, checking that
+static labels and history eventually reach the display while Luna animates.
 
 These checks do not validate physical pins, encoder direction, OLED orientation, actual brightness
 or final firmware size. Hardware validation requires building and testing the firmware on the board.
